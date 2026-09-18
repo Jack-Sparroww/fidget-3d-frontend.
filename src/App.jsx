@@ -20,7 +20,7 @@ export default function App() {
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isColorModalOpen, setIsColorModalOpen] = useState(false);
-  const [selectedColor, setSelectedColor] = useState({ name: 'Verde Lime', hex: '#84cc16', category: 'Neons' });
+  const [selectedColor, setSelectedColor] = useState({ name: 'Dourado Silk', hex: '#eab308', category: 'Silk' });
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   
   const mountRef = useRef(null);
@@ -28,18 +28,18 @@ export default function App() {
   const spoolGroupRef = useRef(null);
 
   const colorsList = [
-    { name: 'Verde Lime', hex: '#84cc16', category: 'Neons' },
-    { name: 'Cyber Magenta', hex: '#ec4899', category: 'Vibrantes' },
-    { name: 'Laranja Flame', hex: '#f97316', category: 'Vibrantes' },
-    { name: 'Roxo Deep', hex: '#8b5cf6', category: 'Vibrantes' },
-    { name: 'Azul Neon', hex: '#06b6d4', category: 'Neons' },
-    { name: 'Branco Neve', hex: '#f8fafc', category: 'Sólidos' },
-    { name: 'Cinza Metálico', hex: '#64748b', category: 'Sólidos' },
     { name: 'Dourado Silk', hex: '#eab308', category: 'Silk' },
-    { name: 'Vermelho Fogo', hex: '#ef4444', category: 'Vibrantes' },
-    { name: 'Azul Meia-Noite', hex: '#1e3a8a', category: 'Sólidos' },
-    { name: 'Amarelo Sol', hex: '#facc15', category: 'Neons' },
-    { name: 'Rosa Pastel', hex: '#f472b6', category: 'Pastéis' }
+    { name: 'Prata Silk', hex: '#94a3b8', category: 'Silk' },
+    { name: 'Vermelho Silk', hex: '#dc2626', category: 'Silk' },
+    { name: 'Azul Silk', hex: '#2563eb', category: 'Silk' },
+    { name: 'Preto Matte', hex: '#18181b', category: 'Matte' },
+    { name: 'Branco Matte', hex: '#f4f4f5', category: 'Matte' },
+    { name: 'Cinza Matte', hex: '#71717a', category: 'Matte' },
+    { name: 'Azul/Verde DualColor', hex: '#06b6d4', category: 'DualColor' },
+    { name: 'Rosa/Roxo DualColor', hex: '#d946ef', category: 'DualColor' },
+    { name: 'Cobre/Dourado DualColor', hex: '#d97706', category: 'DualColor' },
+    { name: 'Rainbow Tricolor (Azul/Rosa/Amarelo)', hex: '#ec4899', category: 'Tricolor' },
+    { name: 'Sunset Tricolor (Roxo/Laranja/Amarelo)', hex: '#f97316', category: 'Tricolor' }
   ];
 
   const products = [
@@ -110,7 +110,6 @@ export default function App() {
 
       filamentMaterialsRef.current = [];
 
-      // Múltiplas camadas concêntricas simulando espirais de filamento real
       const layersCount = 5;
       for (let i = 0; i < layersCount; i++) {
         const radius = 0.75 + (i * 0.12);
@@ -129,13 +128,11 @@ export default function App() {
         group.add(filamentLayer);
       }
 
-      // Miolo texturizado interno do filamento
       const coreGeo = new THREE.CylinderGeometry(0.72, 0.72, 0.78, 32);
       const coreMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.9 });
       const coreMesh = new THREE.Mesh(coreGeo, coreMat);
       group.add(coreMesh);
 
-      // Abas laterais do carretel
       const spoolMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.25, metalness: 0.45 });
       
       const flangeGeo1 = new THREE.CylinderGeometry(1.35, 1.35, 0.08, 48);
@@ -148,7 +145,6 @@ export default function App() {
       flange2.position.y = -0.42;
       group.add(flange2);
 
-      // Janelas vazadas na aba do carretel
       for (let j = 0; j < 6; j++) {
         const angle = (j / 6) * Math.PI * 2;
         const ribGeo = new THREE.BoxGeometry(0.15, 0.09, 0.6);
@@ -162,7 +158,6 @@ export default function App() {
         group.add(rib2);
       }
 
-      // Furo central do carretel
       const holeGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.95, 24);
       const holeMat = new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.9 });
       const hole = new THREE.Mesh(holeGeo, holeMat);
@@ -351,7 +346,7 @@ export default function App() {
                 className="px-6 py-3.5 bg-slate-900 border border-lime-500/50 hover:border-lime-400 text-lime-400 font-bold rounded-xl shadow-lg transition-all flex items-center gap-3 hover:scale-105"
               >
                 <span className="w-4 h-4 rounded-full shadow-sm" style={{ backgroundColor: selectedColor.hex }} />
-                Escolher Cor do Filamento ({selectedColor.name})
+                Escolher Filamento ({selectedColor.name})
               </button>
               <a
                 href="#catalogo"
@@ -384,21 +379,21 @@ export default function App() {
                 onClick={() => setIsColorModalOpen(true)}
                 className="text-xs font-mono text-lime-400 hover:text-lime-300 underline"
               >
-                Alterar Cor
+                Alterar
               </button>
             </div>
 
             <div ref={mountRef} className="w-full h-72 sm:h-80 rounded-2xl cursor-grab active:cursor-grabbing mt-6" />
 
             <div className="mt-4 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-              <span>💡 Dica: Arraste com o mouse para girar o rolo em 360°.</span>
-              <span className="font-mono text-slate-500">{colorsList.length} cores no total</span>
+              <span>💡 Dica: Arraste para girar o rolo em 360°.</span>
+              <span className="font-mono text-slate-500">Silk, Matte, Dual & Tri</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* MODAL / ABA DE SELEÇÃO DE CORES ORGANIZADA */}
+      {/* MODAL DE SELEÇÃO DE FILAMENTOS ORGANIZADO */}
       {isColorModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
@@ -408,8 +403,8 @@ export default function App() {
           <div className="relative w-full max-w-2xl bg-[#0e1217] border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl z-10 overflow-hidden">
             <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
               <div>
-                <h3 className="text-xl font-black text-white tracking-tight">Catálogo de Cores de Filamento</h3>
-                <p className="text-xs text-slate-400 mt-0.5">Selecione o tom de PLA ideal para a sua impressão 3D</p>
+                <h3 className="text-xl font-black text-white tracking-tight">Catálogo de Filamentos 3D</h3>
+                <p className="text-xs text-slate-400 mt-0.5">Selecione o tipo e acabamento desejado para a impressão</p>
               </div>
               <button
                 onClick={() => setIsColorModalOpen(false)}
@@ -420,7 +415,7 @@ export default function App() {
             </div>
 
             <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
-              {['Neons', 'Vibrantes', 'Sólidos', 'Silk', 'Pastéis'].map((catName) => {
+              {['Silk', 'Matte', 'DualColor', 'Tricolor'].map((catName) => {
                 const categoryColors = colorsList.filter((c) => c.category === catName);
                 if (categoryColors.length === 0) return null;
 
@@ -429,12 +424,12 @@ export default function App() {
                     <h4 className="text-xs font-mono uppercase tracking-wider text-lime-400 mb-3">
                       — {catName}
                     </h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {categoryColors.map((color) => {
                         const isSelected = selectedColor.hex === color.hex;
                         return (
                           <button
-                            key={color.hex}
+                            key={color.name}
                             onClick={() => {
                               setSelectedColor(color);
                               setIsColorModalOpen(false);
@@ -451,7 +446,7 @@ export default function App() {
                             />
                             <div className="overflow-hidden">
                               <span className="block text-xs font-bold text-white truncate">{color.name}</span>
-                              <span className="block text-[10px] text-slate-500 font-mono">PLA Premium</span>
+                              <span className="block text-[10px] text-slate-500 font-mono">PLA {color.category}</span>
                             </div>
                           </button>
                         );
@@ -481,7 +476,7 @@ export default function App() {
               Catálogo de Fidgets
             </h2>
             <p className="text-slate-400 text-sm">
-              Serão impressos na cor selecionada: <strong className="text-lime-400">{selectedColor.name}</strong>
+              Serão impressos no filamento selecionado: <strong className="text-lime-400">{selectedColor.name}</strong>
             </p>
           </div>
 
