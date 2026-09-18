@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 
-// Logo Oficial SolidAxis em SVG
 const SolidAxisLogo = () => (
   <svg className="w-9 h-9" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
     <circle cx="100" cy="100" r="85" stroke="#334155" strokeWidth="4" />
@@ -23,7 +22,7 @@ export default function App() {
   const [selectedColor, setSelectedColor] = useState('#84cc16');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const mountRef = useRef(null);
-  const cubeMaterialsRef = useRef([]);
+  const cubeMeshRef = useRef(null);
 
   const products = [
     {
@@ -84,72 +83,57 @@ export default function App() {
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       currentRef.replaceChildren(renderer.domElement);
 
-      const mainGroup = new THREE.Group();
+      const group = new THREE.Group();
 
-      // Geometria do Cubo Principal
-      const boxGeo = new THREE.BoxGeometry(1.3, 1.3, 1.3);
-      
-      // Aplicar a cor selecionada em TODAS as faces externas do cubo
-      const baseColor = new THREE.Color(selectedColor);
+      // Geometria do cubo
+      const geometry = new THREE.BoxGeometry(1.3, 1.3, 1.3);
+
+      // Materiais independentes para cada face
       const materials = [
-        new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.2, metalness: 0.5 }),
-        new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.2, metalness: 0.5 }),
-        new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.1, metalness: 0.8 }), // Topo claro estilo logo
-        new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.6, metalness: 0.1 }),
-        new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.2, metalness: 0.5 }),
-        new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.2, metalness: 0.5 }),
+        new THREE.MeshStandardMaterial({ color: new THREE.Color(selectedColor), roughness: 0.3, metalness: 0.2 }),
+        new THREE.MeshStandardMaterial({ color: new THREE.Color(selectedColor), roughness: 0.3, metalness: 0.2 }),
+        new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.1, metalness: 0.5 }), // Topo claro
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.1 }),
+        new THREE.MeshStandardMaterial({ color: new THREE.Color(selectedColor), roughness: 0.3, metalness: 0.2 }),
+        new THREE.MeshStandardMaterial({ color: new THREE.Color(selectedColor), roughness: 0.3, metalness: 0.2 })
       ];
-      cubeMaterialsRef.current = materials;
 
-      const cube = new THREE.Mesh(boxGeo, materials);
-      mainGroup.add(cube);
+      const cube = new THREE.Mesh(geometry, materials);
+      cubeMeshRef.current = cube;
+      group.add(cube);
 
-      // Bordas Douradas/Neon Chanfradas (Arestas Vivas)
-      const edgesGeo = new THREE.EdgesGeometry(boxGeo);
-      const lineMat = new THREE.LineBasicMaterial({ color: 0xa3e635, linewidth: 3 });
-      const wireframe = new THREE.LineSegments(edgesGeo, lineMat);
+      // Contorno em linhas brilhantes estilo neon
+      const edges = new THREE.EdgesGeometry(geometry);
+      const lineMaterial = new THREE.LineBasicMaterial({ color: 0xa3e635, linewidth: 2 });
+      const wireframe = new THREE.LineSegments(edges, lineMaterial);
       wireframe.scale.set(1.01, 1.01, 1.01);
-      mainGroup.add(wireframe);
+      group.add(wireframe);
 
-      // Anéis Orbitais Triplos da SolidAxis
-      const ringGroup = new THREE.Group();
-      
-      const ringGeo1 = new THREE.TorusGeometry(1.2, 0.02, 16, 100);
-      const ringMat1 = new THREE.MeshBasicMaterial({ color: 0x84cc16 });
-      const ring1 = new THREE.Mesh(ringGeo1, ringMat1);
-      ring1.rotation.x = Math.PI / 3;
-      ringGroup.add(ring1);
+      // Anel Orbital em volta do cubo
+      const ringGeo = new THREE.TorusGeometry(1.25, 0.025, 16, 100);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x84cc16 });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = Math.PI / 3;
+      group.add(ring);
 
-      const ringGeo2 = new THREE.TorusGeometry(1.4, 0.015, 16, 100);
-      const ringMat2 = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
-      const ring2 = new THREE.Mesh(ringGeo2, ringMat2);
-      ring2.rotation.y = Math.PI / 4;
-      ringGroup.add(ring2);
+      scene.add(group);
 
-      mainGroup.add(ringGroup);
-      scene.add(mainGroup);
-
-      // Luzes para dar efeito metálico 3D real
+      // Luzes
       const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
       scene.add(ambientLight);
 
-      const pointLight1 = new THREE.PointLight(0x84cc16, 3, 10);
-      pointLight1.position.set(3, 4, 3);
-      scene.add(pointLight1);
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+      dirLight.position.set(5, 5, 5);
+      scene.add(dirLight);
 
-      const pointLight2 = new THREE.PointLight(0x38bdf8, 2, 10);
-      pointLight2.position.set(-3, -2, -3);
-      scene.add(pointLight2);
-
-      camera.position.set(2.8, 2.2, 3.2);
+      camera.position.set(2.6, 2.2, 3.2);
       camera.lookAt(0, 0, 0);
 
       let animationFrameId;
       const animate = () => {
         animationFrameId = requestAnimationFrame(animate);
-        mainGroup.rotation.y += 0.008;
-        mainGroup.rotation.x += 0.003;
-        ringGroup.rotation.z += 0.01;
+        group.rotation.y += 0.01;
+        ring.rotation.z += 0.015;
         renderer.render(scene, camera);
       };
       animate();
@@ -171,18 +155,19 @@ export default function App() {
           currentRef.replaceChildren();
         }
       };
-    } catch (error) {
-      console.error("Erro no Canvas 3D:", error);
+    } catch (err) {
+      console.error(err);
     }
   }, []);
 
-  // Atualizar a cor de TODAS as faces quando o utilizador clica nos botões de cor
+  // Atualiza as cores do cubo em tempo real ao selecionar a cor
   useEffect(() => {
-    if (cubeMaterialsRef.current.length > 0) {
+    if (cubeMeshRef.current && Array.isArray(cubeMeshRef.current.material)) {
       const newColor = new THREE.Color(selectedColor);
-      [0, 1, 4, 5].forEach((index) => {
-        cubeMaterialsRef.current[index].color.set(newColor);
-      });
+      cubeMeshRef.current.material[0].color.set(newColor);
+      cubeMeshRef.current.material[1].color.set(newColor);
+      cubeMeshRef.current.material[4].color.set(newColor);
+      cubeMeshRef.current.material[5].color.set(newColor);
     }
   }, [selectedColor]);
 
