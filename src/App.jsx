@@ -135,8 +135,8 @@ export default function App() {
     let animationFrameId;
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
-      mesh.rotation.x += 0.008;
-      mesh.rotation.y += 0.012;
+      cubeMesh.rotation.x += 0.008;
+      cubeMesh.rotation.y += 0.012;
       renderer.render(scene, camera);
     };
     animate();
@@ -163,11 +163,11 @@ export default function App() {
 
   // Atualizar cor do modelo 3D ao selecionar
   useEffect(() => {
-    if (meshRef.current) {
-      meshRef.current.material.color.set(selectedColor);
+  if (meshRef.current && Array.isArray(meshRef.current.material)) {
+    meshRef.current.material[0].color.set(selectedColor);
+    meshRef.current.material[4].color.set(selectedColor);
     }
   }, [selectedColor]);
-
   const addToCart = (product) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
