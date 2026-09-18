@@ -109,9 +109,7 @@ export default function App() {
 
       filamentMaterialsRef.current = [];
 
-      // DETALHE REALISTA DO FILAMENTO:
-      // Em vez de 1 bloco liso, criamos várias camadas concêntricas (espirais/voltas de filamento)
-      // e anéis texturizados para dar relevo visual real.
+      // DETALHE REALISTA DO FILAMENTO (Múltiplas camadas simulando espirais)
       const layersCount = 5;
       for (let i = 0; i < layersCount; i++) {
         const radius = 0.75 + (i * 0.12);
@@ -120,9 +118,8 @@ export default function App() {
         const filamentGeo = new THREE.CylinderGeometry(radius, radius, heightVal, 48, 12, true);
         const filamentMat = new THREE.MeshStandardMaterial({
           color: new THREE.Color(selectedColor.hex),
-          roughness: 0.35 - (i * 0.02), // variação de brilho por camada
+          roughness: 0.35 - (i * 0.02),
           metalness: 0.1,
-          wireframe: false,
           side: THREE.DoubleSide
         });
         
@@ -131,13 +128,13 @@ export default function App() {
         group.add(filamentLayer);
       }
 
-      // Miolo texturizado interno do filamento (núcleo técnico)
+      // Miolo texturizado interno do filamento
       const coreGeo = new THREE.CylinderGeometry(0.72, 0.72, 0.78, 32);
       const coreMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.9 });
       const coreMesh = new THREE.Mesh(coreGeo, coreMat);
       group.add(coreMesh);
 
-      // 2. Abas laterais do carretel (plástico técnico com detalhes de relevo)
+      // Abas laterais do carretel
       const spoolMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.25, metalness: 0.45 });
       
       const flangeGeo1 = new THREE.CylinderGeometry(1.35, 1.35, 0.08, 48);
@@ -150,7 +147,7 @@ export default function App() {
       flange2.position.y = -0.42;
       group.add(flange2);
 
-      // Detalhes de janelas vazadas na aba do carretel (estilo carretel 3D real)
+      // Janelas vazadas na aba do carretel
       for (let j = 0; j < 6; j++) {
         const angle = (j / 6) * Math.PI * 2;
         const ribGeo = new THREE.BoxGeometry(0.15, 0.09, 0.6);
@@ -164,13 +161,12 @@ export default function App() {
         group.add(rib2);
       }
 
-      // 3. Furo central do carretel
+      // Furo central do carretel
       const holeGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.95, 24);
       const holeMat = new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.9 });
       const hole = new THREE.Mesh(holeGeo, holeMat);
       group.add(hole);
 
-      // Posição inicial inclinada elegante
       group.rotation.x = Math.PI / 5;
       group.rotation.y = Math.PI / 4;
       scene.add(group);
@@ -188,7 +184,7 @@ export default function App() {
 
       camera.position.set(0, 0, 3.8);
 
-      // Rotação livre de 360° em todos os eixos (sem travas verticais)
+      // Rotação 360° livre em todos os eixos
       let isDragging = false;
       let previousMousePosition = { x: 0, y: 0 };
       let autoRotate = true;
@@ -214,7 +210,6 @@ export default function App() {
         const deltaX = e.clientX - previousMousePosition.x;
         const deltaY = e.clientY - previousMousePosition.y;
 
-        // Rotação 360° total nos eixos X e Y sem limites restritivos
         group.rotation.y += deltaX * 0.012;
         group.rotation.x += deltaY * 0.012;
 
@@ -338,7 +333,7 @@ export default function App() {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-lime-500/10 border border-lime-500/30 text-lime-400 text-xs font-mono mb-6">
               <span className="w-2 h-2 rounded-full bg-lime-500 animate-ping" />
-              Simulador 3D Total (360° livre)
+              Simulador 3D com Rotação 360° Livre
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-none mb-6">
               Fidget Toys 3D com <br />
@@ -347,7 +342,7 @@ export default function App() {
               </span>
             </h1>
             <p className="text-slate-400 text-base sm:text-lg mb-8 max-w-xl">
-              Inspecione o carretel realista em 360° em qualquer direção. Escolha a sua cor de filamento PLA e veja o modelo atualizar instantaneamente!
+              Clique e arraste o carretel para inspecioná-lo de todos os ângulos em 360°. Escolha a sua cor de PLA favorita e personalize o seu pedido em tempo real!
             </p>
 
             <div className="flex flex-wrap gap-4 mb-8">
@@ -379,7 +374,7 @@ export default function App() {
                 Filamento: <strong className="text-lime-400 ml-1">{selectedColor.name}</strong>
               </span>
               <span className="text-[10px] font-mono text-slate-500 hidden sm:inline-block">
-                🔄 Rotação livre 360°
+                🔄 Arraste para girar em 360°
               </span>
             </div>
 
@@ -462,7 +457,7 @@ export default function App() {
                   <span className="flex items-center gap-1 text-amber-400 font-semibold">
                     ★ {product.rating} <span className="text-slate-500">({product.reviews})</span>
                   </span>
-                  <span className="font-mono text-lime-400/80">In Stock</span>
+                  <span className="font-mono text-lime-400/80">Em Estoque</span>
                 </div>
 
                 <h3 className="font-bold text-white group-hover:text-lime-400 transition-colors mb-2">
@@ -557,7 +552,7 @@ export default function App() {
               {cart.length > 0 && (
                 <div className="pt-6 border-t border-slate-800 space-y-4">
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-slate-400">Data Total</span>
+                    <span className="text-slate-400">Total do Pedido</span>
                     <span className="text-2xl font-black text-white">
                       R$ {totalCartPrice.toFixed(2).replace('.', ',')}
                     </span>
