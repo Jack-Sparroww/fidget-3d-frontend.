@@ -23,7 +23,7 @@ export default function App() {
   const [selectedColor, setSelectedColor] = useState('#84cc16');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const mountRef = useRef(null);
-  const meshRef = useRef(null);
+  const cubeMaterialsRef = useRef([]);
 
   const products = [
     {
@@ -34,7 +34,7 @@ export default function App() {
       rating: 4.9,
       reviews: 128,
       image: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&q=80&w=400',
-      description: 'Design exclusivo de alta rotação impresso em PLA Premium com tolerância de 0.1mm na Creality K1.'
+      description: 'Design exclusivo de alta rotação impresso em PLA Premium com tolerância de 0.1mm.'
     },
     {
       id: 2,
@@ -84,62 +84,72 @@ export default function App() {
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       currentRef.replaceChildren(renderer.domElement);
 
-      // Grupo do Cubo da Logo SolidAxis
-      const cubeGroup = new THREE.Group();
+      const mainGroup = new THREE.Group();
 
-      // Geometria principal do cubo
-      const boxGeometry = new THREE.BoxGeometry(1.4, 1.4, 1.4);
-
-      // Materiais idênticos às faces da logo (Topo Claro, Esquerda Cinza, Direita Escuro)
+      // Geometria do Cubo Principal
+      const boxGeo = new THREE.BoxGeometry(1.3, 1.3, 1.3);
+      
+      // Aplicar a cor selecionada em TODAS as faces externas do cubo
+      const baseColor = new THREE.Color(selectedColor);
       const materials = [
-        new THREE.MeshStandardMaterial({ color: new THREE.Color(selectedColor), roughness: 0.2, metalness: 0.4 }), // Direita (+X)
-        new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.3, metalness: 0.3 }),                       // Esquerda (-X)
-        new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.1, metalness: 0.7 }),                       // Topo (+Y)
-        new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.2 }),                       // Base (-Y)
-        new THREE.MeshStandardMaterial({ color: new THREE.Color(selectedColor), roughness: 0.2, metalness: 0.4 }), // Frente (+Z)
-        new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.3 }),                       // Trás (-Z)
+        new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.2, metalness: 0.5 }),
+        new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.2, metalness: 0.5 }),
+        new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.1, metalness: 0.8 }), // Topo claro estilo logo
+        new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.6, metalness: 0.1 }),
+        new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.2, metalness: 0.5 }),
+        new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.2, metalness: 0.5 }),
       ];
+      cubeMaterialsRef.current = materials;
 
-      const cubeMesh = new THREE.Mesh(boxGeometry, materials);
-      cubeGroup.add(cubeMesh);
+      const cube = new THREE.Mesh(boxGeo, materials);
+      mainGroup.add(cube);
 
-      // Contorno Neon (Efeito Chanfrado/Arestas)
-      const edgesGeometry = new THREE.EdgesGeometry(boxGeometry);
-      const lineMaterial = new THREE.LineBasicMaterial({ color: 0xa3e635, linewidth: 2 });
-      const wireframe = new THREE.LineSegments(edgesGeometry, lineMaterial);
-      wireframe.scale.set(1.02, 1.02, 1.02);
-      cubeGroup.add(wireframe);
+      // Bordas Douradas/Neon Chanfradas (Arestas Vivas)
+      const edgesGeo = new THREE.EdgesGeometry(boxGeo);
+      const lineMat = new THREE.LineBasicMaterial({ color: 0xa3e635, linewidth: 3 });
+      const wireframe = new THREE.LineSegments(edgesGeo, lineMat);
+      wireframe.scale.set(1.01, 1.01, 1.01);
+      mainGroup.add(wireframe);
 
-      // Anel Orbital Interno estilo SolidAxis
-      const ringGeo = new THREE.TorusGeometry(1.3, 0.03, 16, 100);
-      const ringMat = new THREE.MeshBasicMaterial({ color: 0x84cc16, wireframe: true });
-      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-      ringMesh.rotation.x = Math.PI / 3;
-      cubeGroup.add(ringMesh);
+      // Anéis Orbitais Triplos da SolidAxis
+      const ringGroup = new THREE.Group();
+      
+      const ringGeo1 = new THREE.TorusGeometry(1.2, 0.02, 16, 100);
+      const ringMat1 = new THREE.MeshBasicMaterial({ color: 0x84cc16 });
+      const ring1 = new THREE.Mesh(ringGeo1, ringMat1);
+      ring1.rotation.x = Math.PI / 3;
+      ringGroup.add(ring1);
 
-      meshRef.current = cubeMesh;
-      scene.add(cubeGroup);
+      const ringGeo2 = new THREE.TorusGeometry(1.4, 0.015, 16, 100);
+      const ringMat2 = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+      const ring2 = new THREE.Mesh(ringGeo2, ringMat2);
+      ring2.rotation.y = Math.PI / 4;
+      ringGroup.add(ring2);
 
-      // Iluminação de estúdio
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+      mainGroup.add(ringGroup);
+      scene.add(mainGroup);
+
+      // Luzes para dar efeito metálico 3D real
+      const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
       scene.add(ambientLight);
 
-      const dirLight1 = new THREE.DirectionalLight(0x84cc16, 2.2);
-      dirLight1.position.set(5, 8, 5);
-      scene.add(dirLight1);
+      const pointLight1 = new THREE.PointLight(0x84cc16, 3, 10);
+      pointLight1.position.set(3, 4, 3);
+      scene.add(pointLight1);
 
-      const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 1.5);
-      dirLight2.position.set(-5, -5, -2);
-      scene.add(dirLight2);
+      const pointLight2 = new THREE.PointLight(0x38bdf8, 2, 10);
+      pointLight2.position.set(-3, -2, -3);
+      scene.add(pointLight2);
 
-      camera.position.set(2.5, 2.2, 3.5);
+      camera.position.set(2.8, 2.2, 3.2);
       camera.lookAt(0, 0, 0);
 
       let animationFrameId;
       const animate = () => {
         animationFrameId = requestAnimationFrame(animate);
-        cubeGroup.rotation.y += 0.01;
-        ringMesh.rotation.z += 0.015;
+        mainGroup.rotation.y += 0.008;
+        mainGroup.rotation.x += 0.003;
+        ringGroup.rotation.z += 0.01;
         renderer.render(scene, camera);
       };
       animate();
@@ -162,14 +172,17 @@ export default function App() {
         }
       };
     } catch (error) {
-      console.error("Erro ao inicializar o Canvas 3D:", error);
+      console.error("Erro no Canvas 3D:", error);
     }
   }, []);
 
+  // Atualizar a cor de TODAS as faces quando o utilizador clica nos botões de cor
   useEffect(() => {
-    if (meshRef.current && Array.isArray(meshRef.current.material)) {
-      meshRef.current.material[0].color.set(selectedColor);
-      meshRef.current.material[4].color.set(selectedColor);
+    if (cubeMaterialsRef.current.length > 0) {
+      const newColor = new THREE.Color(selectedColor);
+      [0, 1, 4, 5].forEach((index) => {
+        cubeMaterialsRef.current[index].color.set(newColor);
+      });
     }
   }, [selectedColor]);
 
@@ -303,7 +316,7 @@ export default function App() {
                 {[
                   { name: 'Verde Lime', hex: '#84cc16' },
                   { name: 'Cyber Magenta', hex: '#ec4899' },
-                  { name: 'Prata Metal', hex: '#94a3b8' },
+                  { name: 'Laranja Flame', hex: '#f97316' },
                   { name: 'Roxo Deep', hex: '#8b5cf6' },
                   { name: 'Azul Neon', hex: '#06b6d4' }
                 ].map((color) => (
@@ -318,30 +331,6 @@ export default function App() {
                   />
                 ))}
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-slate-950 border-b border-slate-800/60 py-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-slate-400">
-          <div className="flex items-center gap-3">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lime-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-lime-500"></span>
-            </span>
-            <span>
-              <strong className="text-slate-200">Telemetria da Fazenda de Impressão SolidAxis</strong>
-            </span>
-          </div>
-          <div className="flex items-center gap-6">
-            <span>Creality K1 • Bico 0.4mm • Temp: 215°C</span>
-            <div className="hidden sm:flex items-center gap-2">
-              <span>Lote em produção:</span>
-              <div className="w-24 bg-slate-800 rounded-full h-2 overflow-hidden">
-                <div className="bg-lime-500 h-full w-[77%]" />
-              </div>
-              <span className="text-lime-400">77%</span>
             </div>
           </div>
         </div>
@@ -492,7 +481,7 @@ export default function App() {
                     </span>
                   </div>
                   <button
-                    onClick={() => alert('Checkout em integração com Mercado Pago!')}
+                    onClick={() => alert('Checkout enviado!')}
                     className="w-full py-4 bg-lime-500 hover:bg-lime-400 text-slate-950 font-bold rounded-xl transition-all text-sm uppercase tracking-wider"
                   >
                     Finalizar Pedido com Pix
@@ -505,44 +494,8 @@ export default function App() {
       )}
 
       <footer className="bg-slate-950 border-t border-slate-800/80 py-12 text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <SolidAxisLogo />
-              <span className="text-base font-bold text-white">SOLIDAXIS</span>
-            </div>
-            <p className="text-slate-400">
-              E-commerce oficial de manufatura aditiva B2C focado em Fidget Toys 3D.
-            </p>
-          </div>
-          <div>
-            <h4 className="font-bold text-white mb-3">Nossos Produtos</h4>
-            <ul className="space-y-2">
-              <li>Spinners Articulados</li>
-              <li>Cubos Infinitos</li>
-              <li>Lagartas & Dragões</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-bold text-white mb-3">Garantia & Qualidade</h4>
-            <ul className="space-y-2">
-              <li>Impressoras Creality K1</li>
-              <li>Filamentos Biodegradáveis</li>
-              <li>Tolerância de Impressão 0.1mm</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-bold text-white mb-3">Atendimento</h4>
-            <p className="text-slate-400 mb-2">Suporte comercial SolidAxis</p>
-            <span className="text-lime-400 font-mono">suporte@solidaxis.com.br</span>
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-slate-900 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p>© 2026 SolidAxis 3D Lab. Todos os direitos reservados.</p>
-          <div className="flex gap-4 text-slate-400">
-            <a href="#" className="hover:text-white">Termos</a>
-            <a href="#" className="hover:text-white">Privacidade</a>
-          </div>
         </div>
       </footer>
     </div>
