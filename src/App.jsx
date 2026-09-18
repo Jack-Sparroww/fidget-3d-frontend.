@@ -72,77 +72,98 @@ export default function App() {
     const currentRef = mountRef.current;
     if (!currentRef) return;
 
-    const width = currentRef.clientWidth;
-    const height = currentRef.clientHeight;
+    try {
+      const width = currentRef.clientWidth || 300;
+      const height = currentRef.clientHeight || 300;
 
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    currentRef.appendChild(renderer.domElement);
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      currentRef.replaceChildren(renderer.domElement);
 
-    // Cubo 3D SolidAxis
-    const boxGeometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
-    const materials = [
-      new THREE.MeshStandardMaterial({ color: new THREE.Color(selectedColor), roughness: 0.2, metalness: 0.5 }),
-      new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.3, metalness: 0.4 }),
-      new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.1, metalness: 0.8 }),
-      new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.2 }),
-      new THREE.MeshStandardMaterial({ color: new THREE.Color(selectedColor), roughness: 0.2, metalness: 0.5 }),
-      new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.3 }),
-    ];
+      // Grupo do Cubo da Logo SolidAxis
+      const cubeGroup = new THREE.Group();
 
-    const cubeMesh = new THREE.Mesh(boxGeometry, materials);
+      // Geometria principal do cubo
+      const boxGeometry = new THREE.BoxGeometry(1.4, 1.4, 1.4);
 
-    const edgesGeometry = new THREE.EdgesGeometry(boxGeometry);
-    const lineMaterial = new THREE.LineBasicMaterial({ color: 0xa3e635, linewidth: 2 });
-    const wireframe = new THREE.LineSegments(edgesGeometry, lineMaterial);
-    cubeMesh.add(wireframe);
+      // Materiais idênticos às faces da logo (Topo Claro, Esquerda Cinza, Direita Escuro)
+      const materials = [
+        new THREE.MeshStandardMaterial({ color: new THREE.Color(selectedColor), roughness: 0.2, metalness: 0.4 }), // Direita (+X)
+        new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.3, metalness: 0.3 }),                       // Esquerda (-X)
+        new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.1, metalness: 0.7 }),                       // Topo (+Y)
+        new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.2 }),                       // Base (-Y)
+        new THREE.MeshStandardMaterial({ color: new THREE.Color(selectedColor), roughness: 0.2, metalness: 0.4 }), // Frente (+Z)
+        new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.3 }),                       // Trás (-Z)
+      ];
 
-    meshRef.current = cubeMesh;
-    scene.add(cubeMesh);
+      const cubeMesh = new THREE.Mesh(boxGeometry, materials);
+      cubeGroup.add(cubeMesh);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-    scene.add(ambientLight);
+      // Contorno Neon (Efeito Chanfrado/Arestas)
+      const edgesGeometry = new THREE.EdgesGeometry(boxGeometry);
+      const lineMaterial = new THREE.LineBasicMaterial({ color: 0xa3e635, linewidth: 2 });
+      const wireframe = new THREE.LineSegments(edgesGeometry, lineMaterial);
+      wireframe.scale.set(1.02, 1.02, 1.02);
+      cubeGroup.add(wireframe);
 
-    const dirLight1 = new THREE.DirectionalLight(0x84cc16, 2.0);
-    dirLight1.position.set(5, 5, 5);
-    scene.add(dirLight1);
+      // Anel Orbital Interno estilo SolidAxis
+      const ringGeo = new THREE.TorusGeometry(1.3, 0.03, 16, 100);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x84cc16, wireframe: true });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.rotation.x = Math.PI / 3;
+      cubeGroup.add(ringMesh);
 
-    const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 1.2);
-    dirLight2.position.set(-5, -5, -2);
-    scene.add(dirLight2);
+      meshRef.current = cubeMesh;
+      scene.add(cubeGroup);
 
-    camera.position.z = 3.2;
+      // Iluminação de estúdio
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+      scene.add(ambientLight);
 
-    let animationFrameId;
-    const animate = () => {
-      animationFrameId = requestAnimationFrame(animate);
-      cubeMesh.rotation.x += 0.008;
-      cubeMesh.rotation.y += 0.012;
-      renderer.render(scene, camera);
-    };
-    animate();
+      const dirLight1 = new THREE.DirectionalLight(0x84cc16, 2.2);
+      dirLight1.position.set(5, 8, 5);
+      scene.add(dirLight1);
 
-    const handleResize = () => {
-      if (!currentRef) return;
-      const w = currentRef.clientWidth;
-      const h = currentRef.clientHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    };
-    window.addEventListener('resize', handleResize);
+      const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 1.5);
+      dirLight2.position.set(-5, -5, -2);
+      scene.add(dirLight2);
 
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animationFrameId);
-      if (currentRef && renderer.domElement) {
-        currentRef.removeChild(renderer.domElement);
-      }
-    };
+      camera.position.set(2.5, 2.2, 3.5);
+      camera.lookAt(0, 0, 0);
+
+      let animationFrameId;
+      const animate = () => {
+        animationFrameId = requestAnimationFrame(animate);
+        cubeGroup.rotation.y += 0.01;
+        ringMesh.rotation.z += 0.015;
+        renderer.render(scene, camera);
+      };
+      animate();
+
+      const handleResize = () => {
+        if (!currentRef) return;
+        const w = currentRef.clientWidth || 300;
+        const h = currentRef.clientHeight || 300;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      };
+      window.addEventListener('resize', handleResize);
+
+      return () => {
+        window.removeEventListener('resize', handleResize);
+        cancelAnimationFrame(animationFrameId);
+        if (currentRef && renderer.domElement) {
+          currentRef.replaceChildren();
+        }
+      };
+    } catch (error) {
+      console.error("Erro ao inicializar o Canvas 3D:", error);
+    }
   }, []);
 
   useEffect(() => {
@@ -271,7 +292,7 @@ export default function App() {
           <div className="relative bg-slate-900/40 border border-slate-800 rounded-3xl p-6 backdrop-blur-xl">
             <div className="absolute top-4 left-4 z-10 flex items-center gap-2 text-xs font-mono text-slate-400 bg-slate-950/80 px-3 py-1.5 rounded-full border border-slate-800">
               <span className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
-              Visualizador 3D Realtime
+              Visualizador 3D SolidAxis
             </div>
 
             <div ref={mountRef} className="w-full h-80 sm:h-96 rounded-2xl cursor-grab active:cursor-grabbing" />
