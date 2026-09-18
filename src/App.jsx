@@ -19,10 +19,27 @@ const SolidAxisLogo = () => (
 export default function App() {
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [selectedColor, setSelectedColor] = useState('#84cc16');
+  const [selectedColor, setSelectedColor] = useState({ name: 'Verde Lime', hex: '#84cc16' });
   const [selectedCategory, setSelectedCategory] = useState('Todos');
+  
   const mountRef = useRef(null);
   const filamentMeshRef = useRef(null);
+  const spoolGroupRef = useRef(null);
+
+  const colorsList = [
+    { name: 'Verde Lime', hex: '#84cc16' },
+    { name: 'Cyber Magenta', hex: '#ec4899' },
+    { name: 'Laranja Flame', hex: '#f97316' },
+    { name: 'Roxo Deep', hex: '#8b5cf6' },
+    { name: 'Azul Neon', hex: '#06b6d4' },
+    { name: 'Branco Neve', hex: '#f8fafc' },
+    { name: 'Cinza Metálico', hex: '#64748b' },
+    { name: 'Dourado Silk', hex: '#eab308' },
+    { name: 'Vermelho Fogo', hex: '#ef4444' },
+    { name: 'Azul Meia-Noite', hex: '#1e3a8a' },
+    { name: 'Amarelo Sol', hex: '#facc15' },
+    { name: 'Rosa Pastel', hex: '#f472b6' }
+  ];
 
   const products = [
     {
@@ -63,7 +80,7 @@ export default function App() {
       rating: 4.9,
       reviews: 76,
       image: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&q=80&w=400',
-      description: 'Anéis eixos triplos independentes em verde neon e acabamento acetinado.'
+      description: 'Anéis eixos triplos independentes e acabamento acetinado.'
     }
   ];
 
@@ -87,12 +104,15 @@ export default function App() {
       currentRef.replaceChildren(renderer.domElement);
 
       const group = new THREE.Group();
+      spoolGroupRef.current = group;
 
-      // Criação do Rolo de Filamento 3D
-      // 1. O miolo/filamento enrolado (que muda de cor)
+      // Escala ligeiramente reduzida para ficar perfeita e proporcional
+      group.scale.set(0.85, 0.85, 0.85);
+
+      // 1. O miolo/filamento enrolado
       const filamentGeo = new THREE.CylinderGeometry(1.0, 1.0, 0.8, 32);
       const filamentMat = new THREE.MeshStandardMaterial({
-        color: new THREE.Color(selectedColor),
+        color: new THREE.Color(selectedColor.hex),
         roughness: 0.4,
         metalness: 0.1
       });
@@ -100,7 +120,7 @@ export default function App() {
       filamentMeshRef.current = filamentMesh;
       group.add(filamentMesh);
 
-      // 2. Abas laterais do carretel (plástico escuro técnico)
+      // 2. Abas laterais do carretel
       const spoolMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.2, metalness: 0.5 });
       
       const flangeGeo1 = new THREE.CylinderGeometry(1.3, 1.3, 0.1, 32);
@@ -119,7 +139,6 @@ export default function App() {
       const hole = new THREE.Mesh(holeGeo, holeMat);
       group.add(hole);
 
-      // Inclinar o carretel para dar um aspeto dinâmico em 3D
       group.rotation.x = Math.PI / 6;
       scene.add(group);
 
@@ -132,12 +151,46 @@ export default function App() {
 
       camera.position.set(0, 0, 3.8);
 
+      // Animação contínua suave (se o utilizador não estiver a arrastar)
+      let isDragging = false;
+      let previousMousePosition = { x: 0, y: 0 };
+      let autoRotate = true;
+
       const animate = () => {
         animationFrameId = requestAnimationFrame(animate);
-        group.rotation.y += 0.012;
+        if (autoRotate && !isDragging) {
+          group.rotation.y += 0.01;
+        }
         renderer.render(scene, camera);
       };
       animate();
+
+      // Controlo de Rotação por Rato / Touch
+      const onMouseDown = (e) => {
+        isDragging = true;
+        autoRotate = false;
+        previousMousePosition = { x: e.clientX, y: e.clientY };
+      };
+
+      const onMouseMove = (e) => {
+        if (!isDragging) return;
+        const deltaX = e.clientX - previousMousePosition.x;
+        const deltaY = e.clientY - previousMousePosition.y;
+
+        group.rotation.y += deltaX * 0.01;
+        group.rotation.x += deltaY * 0.01;
+
+        previousMousePosition = { x: e.clientX, y: e.clientY };
+      };
+
+      const onMouseUp = () => {
+        isDragging = false;
+      };
+
+      const domElem = currentRef;
+      domElem.addEventListener('mousedown', onMouseDown);
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
 
       const handleResize = () => {
         if (!currentRef) return;
@@ -150,6 +203,9 @@ export default function App() {
       window.addEventListener('resize', handleResize);
 
       return () => {
+        domElem.removeEventListener('mousedown', onMouseDown);
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
         window.removeEventListener('resize', handleResize);
         cancelAnimationFrame(animationFrameId);
         if (renderer) renderer.dispose();
@@ -160,28 +216,29 @@ export default function App() {
     }
   }, []);
 
-  // Atualiza a cor do filamento dinamicamente ao selecionar
   useEffect(() => {
     if (filamentMeshRef.current) {
-      filamentMeshRef.current.material.color.set(new THREE.Color(selectedColor));
+      filamentMeshRef.current.material.color.set(new THREE.Color(selectedColor.hex));
     }
   }, [selectedColor]);
 
   const addToCart = (product) => {
     setCart((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
+      const existing = prev.find((item) => item.id === product.id && item.color === selectedColor.name);
       if (existing) {
         return prev.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.id === product.id && item.color === selectedColor.name
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
         );
       }
-      return [...prev, { ...product, quantity: 1, color: selectedColor }];
+      return [...prev, { ...product, quantity: 1, color: selectedColor.name, colorHex: selectedColor.hex }];
     });
     setIsCartOpen(true);
   };
 
-  const removeFromCart = (id) => {
-    setCart((prev) => prev.filter((item) => item.id !== id));
+  const removeFromCart = (id, color) => {
+    setCart((prev) => prev.filter((item) => !(item.id === id && item.color === color)));
   };
 
   const totalCartPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -243,7 +300,7 @@ export default function App() {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-lime-500/10 border border-lime-500/30 text-lime-400 text-xs font-mono mb-6">
               <span className="w-2 h-2 rounded-full bg-lime-500 animate-ping" />
-              Simulador de Filamento em Tempo Real
+              Simulador 3D Interativo de Filamento
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-none mb-6">
               Fidget Toys 3D com <br />
@@ -252,7 +309,7 @@ export default function App() {
               </span>
             </h1>
             <p className="text-slate-400 text-base sm:text-lg mb-8 max-w-xl">
-              Escolha a cor do rolo de PLA Premium abaixo e veja o filamento mudar instantaneamente antes de encomendar o seu fidget toy personalizado!
+              Clique e arraste no rolo ao lado para girar em 3D. Selecione a sua cor de PLA favorita e personalize o seu pedido em tempo real!
             </p>
 
             <div className="flex flex-wrap gap-4 mb-8">
@@ -278,29 +335,31 @@ export default function App() {
           </div>
 
           <div className="relative bg-slate-900/40 border border-slate-800 rounded-3xl p-6 backdrop-blur-xl">
-            <div className="absolute top-4 left-4 z-10 flex items-center gap-2 text-xs font-mono text-slate-400 bg-slate-950/80 px-3 py-1.5 rounded-full border border-slate-800">
-              <span className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
-              Rolo de Filamento PLA 3D
+            <div className="absolute top-4 left-4 z-10 flex items-center justify-between w-[calc(100%-2rem)]">
+              <span className="flex items-center gap-2 text-xs font-mono text-slate-300 bg-slate-950/80 px-3 py-1.5 rounded-full border border-slate-800">
+                <span className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
+                Rolo 3D: <strong className="text-lime-400 ml-1">{selectedColor.name}</strong>
+              </span>
+              <span className="text-[10px] font-mono text-slate-500 hidden sm:inline-block">
+                🖱️ Clique e arraste para girar
+              </span>
             </div>
 
-            <div ref={mountRef} className="w-full h-80 sm:h-96 rounded-2xl cursor-grab active:cursor-grabbing" />
+            <div ref={mountRef} className="w-full h-72 sm:h-80 rounded-2xl cursor-grab active:cursor-grabbing mt-6" />
 
-            <div className="mt-4 pt-4 border-t border-slate-800/80 flex items-center justify-between">
-              <span className="text-xs font-mono text-slate-400">Selecione a Cor:</span>
-              <div className="flex items-center gap-3">
-                {[
-                  { name: 'Verde Lime', hex: '#84cc16' },
-                  { name: 'Cyber Magenta', hex: '#ec4899' },
-                  { name: 'Laranja Flame', hex: '#f97316' },
-                  { name: 'Roxo Deep', hex: '#8b5cf6' },
-                  { name: 'Azul Neon', hex: '#06b6d4' }
-                ].map((color) => (
+            <div className="mt-4 pt-4 border-t border-slate-800/80">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-mono text-slate-400">Paleta de Cores Disponíveis:</span>
+                <span className="text-[10px] font-mono text-slate-500">{colorsList.length} opções</span>
+              </div>
+              <div className="grid grid-cols-6 sm:grid-cols-12 gap-2">
+                {colorsList.map((color) => (
                   <button
                     key={color.hex}
-                    onClick={() => setSelectedColor(color.hex)}
+                    onClick={() => setSelectedColor(color)}
                     style={{ backgroundColor: color.hex }}
-                    className={`w-7 h-7 rounded-full transition-all transform hover:scale-125 ${
-                      selectedColor === color.hex ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-950 scale-110' : 'opacity-80'
+                    className={`w-full aspect-square rounded-lg transition-all transform hover:scale-110 shadow-md ${
+                      selectedColor.hex === color.hex ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-950 scale-110' : 'opacity-80 hover:opacity-100'
                     }`}
                     title={color.name}
                   />
@@ -317,7 +376,9 @@ export default function App() {
             <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
               Catálogo de Fidgets
             </h2>
-            <p className="text-slate-400 text-sm">Escolha o seu modelo e receba em casa</p>
+            <p className="text-slate-400 text-sm">
+              Serão impressos na cor selecionada: <strong className="text-lime-400">{selectedColor.name}</strong>
+            </p>
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0">
@@ -353,6 +414,10 @@ export default function App() {
                   <span className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-md text-lime-400 text-[10px] font-mono px-2.5 py-1 rounded-full border border-slate-800">
                     {product.category}
                   </span>
+                  <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-slate-950/90 px-2.5 py-1 rounded-lg border border-slate-800">
+                    <span className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: selectedColor.hex }} />
+                    <span className="text-[10px] font-mono text-slate-300">{selectedColor.name}</span>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
@@ -381,7 +446,7 @@ export default function App() {
                   onClick={() => addToCart(product)}
                   className="px-4 py-2.5 bg-lime-500 hover:bg-lime-400 text-slate-950 font-bold rounded-xl text-xs transition-all hover:scale-105"
                 >
-                  Comprar
+                  Adicionar
                 </button>
               </div>
             </div>
@@ -417,9 +482,9 @@ export default function App() {
                       Seu carrinho está vazio no momento.
                     </p>
                   ) : (
-                    cart.map((item) => (
+                    cart.map((item, idx) => (
                       <div
-                        key={item.id}
+                        key={`${item.id}-${item.color}-${idx}`}
                         className="flex items-center justify-between p-3 bg-slate-900/80 border border-slate-800 rounded-xl"
                       >
                         <div className="flex items-center gap-3">
@@ -430,13 +495,17 @@ export default function App() {
                           />
                           <div>
                             <h4 className="text-xs font-bold text-white">{item.name}</h4>
-                            <span className="text-xs text-slate-400">
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.colorHex }} />
+                              <span className="text-[10px] text-slate-400 font-mono">{item.color}</span>
+                            </div>
+                            <span className="text-xs text-slate-400 block mt-0.5">
                               R$ {item.price.toFixed(2)} x {item.quantity}
                             </span>
                           </div>
                         </div>
                         <button
-                          onClick={() => removeFromCart(item.id)}
+                          onClick={() => removeFromCart(item.id, item.color)}
                           className="text-red-400 hover:text-red-300 text-xs px-2 py-1"
                         >
                           Remover
@@ -456,8 +525,8 @@ export default function App() {
                     </span>
                   </div>
                   <button
-                    onClick={() => alert('Checkout enviado!')}
-                    className="w-full py-4 bg-lime-500 hover:bg-lime-400 text-slate-950 font-bold rounded-xl transition-all text-sm uppercase tracking-wider"
+                    onClick={() => alert('Pedido encaminhado para pagamento via Pix!')}
+                    className="w-full py-4 bg-lime-500 hover:bg-lime-400 text-slate-950 font-bold rounded-xl transition-all text-sm uppercase tracking-wider shadow-lg shadow-lime-500/10"
                   >
                     Finalizar Pedido com Pix
                   </button>
