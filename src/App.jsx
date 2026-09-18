@@ -93,17 +93,29 @@ export default function App() {
     renderer.setPixelRatio(window.devicePixelRatio);
     currentRef.appendChild(renderer.domElement);
 
-    // Geometria 3D
-    const geometry = new THREE.TorusKnotGeometry(1, 0.35, 128, 32);
-    const material = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(selectedColor),
-      roughness: 0.25,
-      metalness: 0.6,
-    });
+    // Cubo 3D da Logo SolidAxis com Materiais por Face
+    const boxGeometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
 
-    const mesh = new THREE.Mesh(geometry, material);
-    meshRef.current = mesh;
-    scene.add(mesh);
+    // Materiais das faces combinando com a paleta da logo SolidAxis
+    const materials = [
+      new THREE.MeshStandardMaterial({ color: 0x84cc16, roughness: 0.2, metalness: 0.5 }), // Direita (Verde Lime)
+      new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.3, metalness: 0.4 }), // Esquerda (Cinza Grafite)
+      new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.1, metalness: 0.8 }), // Topo (Branco Prata)
+      new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.2 }), // Base (Dark)
+      new THREE.MeshStandardMaterial({ color: 0x84cc16, roughness: 0.2, metalness: 0.5 }), // Frente (Verde Lime)
+      new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.3 }), // Verso
+    ];
+
+    const cubeMesh = new THREE.Mesh(boxGeometry, materials);
+
+    // Borda reluzente em Verde Neon
+    const edgesGeometry = new THREE.EdgesGeometry(boxGeometry);
+    const lineMaterial = new THREE.LineBasicMaterial({ color: 0xa3e635, linewidth: 2 });
+    const wireframe = new THREE.LineSegments(edgesGeometry, lineMaterial);
+    cubeMesh.add(wireframe);
+
+    meshRef.current = cubeMesh;
+    scene.add(cubeMesh);
 
     // Iluminação
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
