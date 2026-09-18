@@ -84,15 +84,12 @@ export default function App() {
       currentRef.replaceChildren(renderer.domElement);
 
       const group = new THREE.Group();
-
-      // Geometria do cubo
       const geometry = new THREE.BoxGeometry(1.3, 1.3, 1.3);
 
-      // Materiais independentes para cada face
       const materials = [
         new THREE.MeshStandardMaterial({ color: new THREE.Color(selectedColor), roughness: 0.3, metalness: 0.2 }),
         new THREE.MeshStandardMaterial({ color: new THREE.Color(selectedColor), roughness: 0.3, metalness: 0.2 }),
-        new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.1, metalness: 0.5 }), // Topo claro
+        new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.1, metalness: 0.5 }),
         new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.1 }),
         new THREE.MeshStandardMaterial({ color: new THREE.Color(selectedColor), roughness: 0.3, metalness: 0.2 }),
         new THREE.MeshStandardMaterial({ color: new THREE.Color(selectedColor), roughness: 0.3, metalness: 0.2 })
@@ -102,14 +99,12 @@ export default function App() {
       cubeMeshRef.current = cube;
       group.add(cube);
 
-      // Contorno em linhas brilhantes estilo neon
       const edges = new THREE.EdgesGeometry(geometry);
-      const lineMaterial = new THREE.LineBasicMaterial({ color: 0xa3e635, linewidth: 2 });
+      const lineMaterial = new THREE.LineBasicMaterial({ color: 0xa3e635 });
       const wireframe = new THREE.LineSegments(edges, lineMaterial);
       wireframe.scale.set(1.01, 1.01, 1.01);
       group.add(wireframe);
 
-      // Anel Orbital em volta do cubo
       const ringGeo = new THREE.TorusGeometry(1.25, 0.025, 16, 100);
       const ringMat = new THREE.MeshBasicMaterial({ color: 0x84cc16 });
       const ring = new THREE.Mesh(ringGeo, ringMat);
@@ -118,7 +113,6 @@ export default function App() {
 
       scene.add(group);
 
-      // Luzes
       const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
       scene.add(ambientLight);
 
@@ -151,7 +145,7 @@ export default function App() {
       return () => {
         window.removeEventListener('resize', handleResize);
         cancelAnimationFrame(animationFrameId);
-        if (currentRef && renderer.domElement) {
+        if (currentRef) {
           currentRef.replaceChildren();
         }
       };
@@ -160,7 +154,6 @@ export default function App() {
     }
   }, []);
 
-  // Atualiza as cores do cubo em tempo real ao selecionar a cor
   useEffect(() => {
     if (cubeMeshRef.current && Array.isArray(cubeMeshRef.current.material)) {
       const newColor = new THREE.Color(selectedColor);
