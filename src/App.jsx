@@ -20,7 +20,13 @@ export default function App() {
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isColorModalOpen, setIsColorModalOpen] = useState(false);
-  const [selectedColor, setSelectedColor] = useState({ name: 'Dourado Silk', hex: '#eab308', category: 'Silk' });
+  
+  // Agora guardamos um array de cores (`colors`) para suportar Dual e Tricolor
+  const [selectedColor, setSelectedColor] = useState({ 
+    name: 'Dourado Silk', 
+    colors: ['#eab308'], 
+    category: 'Silk' 
+  });
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   
   const mountRef = useRef(null);
@@ -28,18 +34,18 @@ export default function App() {
   const spoolGroupRef = useRef(null);
 
   const colorsList = [
-    { name: 'Dourado Silk', hex: '#eab308', category: 'Silk' },
-    { name: 'Prata Silk', hex: '#94a3b8', category: 'Silk' },
-    { name: 'Vermelho Silk', hex: '#dc2626', category: 'Silk' },
-    { name: 'Azul Silk', hex: '#2563eb', category: 'Silk' },
-    { name: 'Preto Matte', hex: '#18181b', category: 'Matte' },
-    { name: 'Branco Matte', hex: '#f4f4f5', category: 'Matte' },
-    { name: 'Cinza Matte', hex: '#71717a', category: 'Matte' },
-    { name: 'Azul/Verde DualColor', hex: '#06b6d4', category: 'DualColor' },
-    { name: 'Rosa/Roxo DualColor', hex: '#d946ef', category: 'DualColor' },
-    { name: 'Cobre/Dourado DualColor', hex: '#d97706', category: 'DualColor' },
-    { name: 'Rainbow Tricolor (Azul/Rosa/Amarelo)', hex: '#ec4899', category: 'Tricolor' },
-    { name: 'Sunset Tricolor (Roxo/Laranja/Amarelo)', hex: '#f97316', category: 'Tricolor' }
+    { name: 'Dourado Silk', colors: ['#eab308', '#ca8a04'], category: 'Silk' },
+    { name: 'Prata Silk', colors: ['#94a3b8', '#64748b'], category: 'Silk' },
+    { name: 'Vermelho Silk', colors: ['#dc2626', '#b91c1c'], category: 'Silk' },
+    { name: 'Azul Silk', colors: ['#2563eb', '#1d4ed8'], category: 'Silk' },
+    { name: 'Preto Matte', colors: ['#18181b', '#09090b'], category: 'Matte' },
+    { name: 'Branco Matte', colors: ['#f4f4f5', '#e4e4e7'], category: 'Matte' },
+    { name: 'Cinza Matte', colors: ['#71717a', '#52525b'], category: 'Matte' },
+    { name: 'Azul/Verde DualColor', colors: ['#06b6d4', '#10b981'], category: 'DualColor' },
+    { name: 'Rosa/Roxo DualColor', colors: ['#d946ef', '#8b5cf6'], category: 'DualColor' },
+    { name: 'Cobre/Dourado DualColor', colors: ['#d97706', '#f59e0b'], category: 'DualColor' },
+    { name: 'Rainbow Tricolor', colors: ['#3b82f6', '#ec4899', '#facc15'], category: 'Tricolor' },
+    { name: 'Sunset Tricolor', colors: ['#9333ea', '#f97316', '#facc15'], category: 'Tricolor' }
   ];
 
   const products = [
@@ -110,20 +116,26 @@ export default function App() {
 
       filamentMaterialsRef.current = [];
 
+      // Criamos camadas independentes no carretel para distribuir as cores do filamento
       const layersCount = 5;
       for (let i = 0; i < layersCount; i++) {
         const radius = 0.75 + (i * 0.12);
         const heightVal = 0.76;
         
         const filamentGeo = new THREE.CylinderGeometry(radius, radius, heightVal, 48, 12, true);
+        
+        // Pega a cor correspondente a esta camada com base no array de cores do filamento selecionado
+        const colorIndex = i % selectedColor.colors.length;
+        const layerColor = selectedColor.colors[colorIndex];
+
         const filamentMat = new THREE.MeshStandardMaterial({
-          color: new THREE.Color(selectedColor.hex),
-          roughness: 0.35 - (i * 0.02),
-          metalness: 0.1,
+          color: new THREE.Color(layerColor),
+          roughness: selectedColor.category === 'Silk' ? 0.2 : 0.6,
+          metalness: selectedColor.category === 'Silk' ? 0.4 : 0.05,
           side: THREE.DoubleSide
         });
         
-        filamentMaterialsRef.current.push(filamentMat);
+        filamentMaterialsRef.current.push({ mat: filamentMat, colors: selectedColor.colors });
         const filamentLayer = new THREE.Mesh(filamentGeo, filamentMat);
         group.add(filamentLayer);
       }
@@ -173,10 +185,6 @@ export default function App() {
       const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
       dirLight.position.set(6, 6, 6);
       scene.add(dirLight);
-
-      const backLight = new THREE.DirectionalLight(0x84cc16, 0.8);
-      backLight.position.set(-6, -6, -6);
-      scene.add(backLight);
 
       camera.position.set(0, 0, 3.8);
 
@@ -244,9 +252,13 @@ export default function App() {
     }
   }, []);
 
+  // Atualiza as cores das camadas do carretel dinamicamente quando o usuário troca o filamento
   useEffect(() => {
-    filamentMaterialsRef.current.forEach((mat) => {
-      mat.color.set(new THREE.Color(selectedColor.hex));
+    filamentMaterialsRef.current.forEach((item, index) => {
+      const colorIndex = index % selectedColor.colors.length;
+      item.mat.color.set(new THREE.Color(selectedColor.colors[colorIndex]));
+      item.mat.roughness = selectedColor.category === 'Silk' ? 0.2 : 0.6;
+      item.mat.metalness = selectedColor.category === 'Silk' ? 0.4 : 0.05;
     });
   }, [selectedColor]);
 
@@ -260,7 +272,7 @@ export default function App() {
             : item
         );
       }
-      return [...prev, { ...product, quantity: 1, color: selectedColor.name, colorHex: selectedColor.hex }];
+      return [...prev, { ...product, quantity: 1, color: selectedColor.name, colors: selectedColor.colors }];
     });
     setIsCartOpen(true);
   };
@@ -337,7 +349,7 @@ export default function App() {
               </span>
             </h1>
             <p className="text-slate-400 text-base sm:text-lg mb-8 max-w-xl">
-              Clique e arraste o carretel para inspecioná-lo de todos os ângulos. Escolha o filamento ideal abrindo o nosso catálogo completo de cores abaixo!
+              Inspecione o carretel em 360° e experimente as transições exclusivas dos filamentos DualColor e Tricolor em tempo real.
             </p>
 
             <div className="flex flex-wrap gap-4 mb-8">
@@ -345,7 +357,11 @@ export default function App() {
                 onClick={() => setIsColorModalOpen(true)}
                 className="px-6 py-3.5 bg-slate-900 border border-lime-500/50 hover:border-lime-400 text-lime-400 font-bold rounded-xl shadow-lg transition-all flex items-center gap-3 hover:scale-105"
               >
-                <span className="w-4 h-4 rounded-full shadow-sm" style={{ backgroundColor: selectedColor.hex }} />
+                <div className="flex -space-x-1 overflow-hidden">
+                  {selectedColor.colors.map((c, i) => (
+                    <span key={i} className="inline-block w-3.5 h-3.5 rounded-full ring-2 ring-slate-900" style={{ backgroundColor: c }} />
+                  ))}
+                </div>
                 Escolher Filamento ({selectedColor.name})
               </button>
               <a
@@ -387,13 +403,13 @@ export default function App() {
 
             <div className="mt-4 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
               <span>💡 Dica: Arraste para girar o rolo em 360°.</span>
-              <span className="font-mono text-slate-500">Silk, Matte, Dual & Tri</span>
+              <span className="font-mono text-slate-500">Visualização Multicamada</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* MODAL DE SELEÇÃO DE FILAMENTOS ORGANIZADO */}
+      {/* MODAL DE SELEÇÃO DE FILAMENTOS COM SUPORTE A DUAL/TRICOLOR */}
       {isColorModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
@@ -426,7 +442,7 @@ export default function App() {
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {categoryColors.map((color) => {
-                        const isSelected = selectedColor.hex === color.hex;
+                        const isSelected = selectedColor.name === color.name;
                         return (
                           <button
                             key={color.name}
@@ -440,10 +456,15 @@ export default function App() {
                                 : 'bg-slate-900/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900'
                             }`}
                           >
-                            <span
-                              className="w-7 h-7 rounded-full shadow-inner shrink-0 border border-black/20"
-                              style={{ backgroundColor: color.hex }}
-                            />
+                            <div className="flex -space-x-1 overflow-hidden shrink-0">
+                              {color.colors.map((c, idx) => (
+                                <span
+                                  key={idx}
+                                  className="inline-block w-4 h-4 rounded-full ring-2 ring-black/30 shadow-inner"
+                                  style={{ backgroundColor: c }}
+                                />
+                              ))}
+                            </div>
                             <div className="overflow-hidden">
                               <span className="block text-xs font-bold text-white truncate">{color.name}</span>
                               <span className="block text-[10px] text-slate-500 font-mono">PLA {color.category}</span>
@@ -514,7 +535,11 @@ export default function App() {
                     {product.category}
                   </span>
                   <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-slate-950/90 px-2.5 py-1 rounded-lg border border-slate-800">
-                    <span className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: selectedColor.hex }} />
+                    <div className="flex -space-x-1">
+                      {selectedColor.colors.map((c, i) => (
+                        <span key={i} className="w-2.5 h-2.5 rounded-full ring-1 ring-black" style={{ backgroundColor: c }} />
+                      ))}
+                    </div>
                     <span className="text-[10px] font-mono text-slate-300">{selectedColor.name}</span>
                   </div>
                 </div>
@@ -595,7 +620,11 @@ export default function App() {
                           <div>
                             <h4 className="text-xs font-bold text-white">{item.name}</h4>
                             <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.colorHex }} />
+                              <div className="flex -space-x-1">
+                                {item.colors?.map((c, i) => (
+                                  <span key={i} className="w-2.5 h-2.5 rounded-full ring-1 ring-black" style={{ backgroundColor: c }} />
+                                ))}
+                              </div>
                               <span className="text-[10px] text-slate-400 font-mono">{item.color}</span>
                             </div>
                             <span className="text-xs text-slate-400 block mt-0.5">
