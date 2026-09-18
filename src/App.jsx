@@ -71,13 +71,16 @@ export default function App() {
     const currentRef = mountRef.current;
     if (!currentRef) return;
 
+    let renderer;
+    let animationFrameId;
+
     try {
       const width = currentRef.clientWidth || 300;
       const height = currentRef.clientHeight || 300;
 
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 
       renderer.setSize(width, height);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -123,7 +126,6 @@ export default function App() {
       camera.position.set(2.6, 2.2, 3.2);
       camera.lookAt(0, 0, 0);
 
-      let animationFrameId;
       const animate = () => {
         animationFrameId = requestAnimationFrame(animate);
         group.rotation.y += 0.01;
@@ -145,6 +147,9 @@ export default function App() {
       return () => {
         window.removeEventListener('resize', handleResize);
         cancelAnimationFrame(animationFrameId);
+        if (renderer) {
+          renderer.dispose();
+        }
         if (currentRef) {
           currentRef.replaceChildren();
         }
