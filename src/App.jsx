@@ -273,7 +273,7 @@ export default function App() {
             <div className="w-3 h-3 rounded-full bg-emerald-500 animate-ping" />
             <div>
               <h3 className="text-sm font-semibold text-slate-200">Telemetria da Fazenda de Impressão</h3>
-              <p className="text-xs text-slate-400 font-mono">Creality K1 • Bico 0.4mm • Temperatura Extrusora: 215°C</p>
+              <p className="text-xs text-slate-400 font-mono">Creality HI • Bico 0.4mm • Temperatura Extrusora: 215°C</p>
             </div>
           </div>
           <div className="w-full md:w-64 space-y-1.5">
