@@ -19,7 +19,8 @@ const SolidAxisLogo = () => (
 export default function App() {
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [selectedColor, setSelectedColor] = useState({ name: 'Verde Lime', hex: '#84cc16' });
+  const [isColorModalOpen, setIsColorModalOpen] = useState(false);
+  const [selectedColor, setSelectedColor] = useState({ name: 'Verde Lime', hex: '#84cc16', category: 'Neons' });
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   
   const mountRef = useRef(null);
@@ -27,18 +28,18 @@ export default function App() {
   const spoolGroupRef = useRef(null);
 
   const colorsList = [
-    { name: 'Verde Lime', hex: '#84cc16' },
-    { name: 'Cyber Magenta', hex: '#ec4899' },
-    { name: 'Laranja Flame', hex: '#f97316' },
-    { name: 'Roxo Deep', hex: '#8b5cf6' },
-    { name: 'Azul Neon', hex: '#06b6d4' },
-    { name: 'Branco Neve', hex: '#f8fafc' },
-    { name: 'Cinza Metálico', hex: '#64748b' },
-    { name: 'Dourado Silk', hex: '#eab308' },
-    { name: 'Vermelho Fogo', hex: '#ef4444' },
-    { name: 'Azul Meia-Noite', hex: '#1e3a8a' },
-    { name: 'Amarelo Sol', hex: '#facc15' },
-    { name: 'Rosa Pastel', hex: '#f472b6' }
+    { name: 'Verde Lime', hex: '#84cc16', category: 'Neons' },
+    { name: 'Cyber Magenta', hex: '#ec4899', category: 'Vibrantes' },
+    { name: 'Laranja Flame', hex: '#f97316', category: 'Vibrantes' },
+    { name: 'Roxo Deep', hex: '#8b5cf6', category: 'Vibrantes' },
+    { name: 'Azul Neon', hex: '#06b6d4', category: 'Neons' },
+    { name: 'Branco Neve', hex: '#f8fafc', category: 'Sólidos' },
+    { name: 'Cinza Metálico', hex: '#64748b', category: 'Sólidos' },
+    { name: 'Dourado Silk', hex: '#eab308', category: 'Silk' },
+    { name: 'Vermelho Fogo', hex: '#ef4444', category: 'Vibrantes' },
+    { name: 'Azul Meia-Noite', hex: '#1e3a8a', category: 'Sólidos' },
+    { name: 'Amarelo Sol', hex: '#facc15', category: 'Neons' },
+    { name: 'Rosa Pastel', hex: '#f472b6', category: 'Pastéis' }
   ];
 
   const products = [
@@ -109,7 +110,7 @@ export default function App() {
 
       filamentMaterialsRef.current = [];
 
-      // DETALHE REALISTA DO FILAMENTO (Múltiplas camadas simulando espirais)
+      // Múltiplas camadas concêntricas simulando espirais de filamento real
       const layersCount = 5;
       for (let i = 0; i < layersCount; i++) {
         const radius = 0.75 + (i * 0.12);
@@ -184,7 +185,6 @@ export default function App() {
 
       camera.position.set(0, 0, 3.8);
 
-      // Rotação 360° livre em todos os eixos
       let isDragging = false;
       let previousMousePosition = { x: 0, y: 0 };
       let autoRotate = true;
@@ -342,10 +342,17 @@ export default function App() {
               </span>
             </h1>
             <p className="text-slate-400 text-base sm:text-lg mb-8 max-w-xl">
-              Clique e arraste o carretel para inspecioná-lo de todos os ângulos em 360°. Escolha a sua cor de PLA favorita e personalize o seu pedido em tempo real!
+              Clique e arraste o carretel para inspecioná-lo de todos os ângulos. Escolha o filamento ideal abrindo o nosso catálogo completo de cores abaixo!
             </p>
 
             <div className="flex flex-wrap gap-4 mb-8">
+              <button
+                onClick={() => setIsColorModalOpen(true)}
+                className="px-6 py-3.5 bg-slate-900 border border-lime-500/50 hover:border-lime-400 text-lime-400 font-bold rounded-xl shadow-lg transition-all flex items-center gap-3 hover:scale-105"
+              >
+                <span className="w-4 h-4 rounded-full shadow-sm" style={{ backgroundColor: selectedColor.hex }} />
+                Escolher Cor do Filamento ({selectedColor.name})
+              </button>
               <a
                 href="#catalogo"
                 className="px-6 py-3.5 bg-lime-500 hover:bg-lime-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-lime-500/20 transition-all hover:scale-105"
@@ -371,37 +378,101 @@ export default function App() {
             <div className="absolute top-4 left-4 z-10 flex items-center justify-between w-[calc(100%-2rem)]">
               <span className="flex items-center gap-2 text-xs font-mono text-slate-300 bg-slate-950/80 px-3 py-1.5 rounded-full border border-slate-800">
                 <span className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
-                Filamento: <strong className="text-lime-400 ml-1">{selectedColor.name}</strong>
+                Filamento Ativo: <strong className="text-lime-400 ml-1">{selectedColor.name}</strong>
               </span>
-              <span className="text-[10px] font-mono text-slate-500 hidden sm:inline-block">
-                🔄 Arraste para girar em 360°
-              </span>
+              <button
+                onClick={() => setIsColorModalOpen(true)}
+                className="text-xs font-mono text-lime-400 hover:text-lime-300 underline"
+              >
+                Alterar Cor
+              </button>
             </div>
 
             <div ref={mountRef} className="w-full h-72 sm:h-80 rounded-2xl cursor-grab active:cursor-grabbing mt-6" />
 
-            <div className="mt-4 pt-4 border-t border-slate-800/80">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-mono text-slate-400">Paleta de Cores Disponíveis:</span>
-                <span className="text-[10px] font-mono text-slate-500">{colorsList.length} opções</span>
-              </div>
-              <div className="grid grid-cols-6 sm:grid-cols-12 gap-2">
-                {colorsList.map((color) => (
-                  <button
-                    key={color.hex}
-                    onClick={() => setSelectedColor(color)}
-                    style={{ backgroundColor: color.hex }}
-                    className={`w-full aspect-square rounded-lg transition-all transform hover:scale-110 shadow-md ${
-                      selectedColor.hex === color.hex ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-950 scale-110' : 'opacity-80 hover:opacity-100'
-                    }`}
-                    title={color.name}
-                  />
-                ))}
-              </div>
+            <div className="mt-4 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+              <span>💡 Dica: Arraste com o mouse para girar o rolo em 360°.</span>
+              <span className="font-mono text-slate-500">{colorsList.length} cores no total</span>
             </div>
           </div>
         </div>
       </section>
+
+      {/* MODAL / ABA DE SELEÇÃO DE CORES ORGANIZADA */}
+      {isColorModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            onClick={() => setIsColorModalOpen(false)}
+            className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"
+          />
+          <div className="relative w-full max-w-2xl bg-[#0e1217] border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl z-10 overflow-hidden">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
+              <div>
+                <h3 className="text-xl font-black text-white tracking-tight">Catálogo de Cores de Filamento</h3>
+                <p className="text-xs text-slate-400 mt-0.5">Selecione o tom de PLA ideal para a sua impressão 3D</p>
+              </div>
+              <button
+                onClick={() => setIsColorModalOpen(false)}
+                className="p-2 bg-slate-900 border border-slate-800 rounded-xl text-slate-400 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
+              {['Neons', 'Vibrantes', 'Sólidos', 'Silk', 'Pastéis'].map((catName) => {
+                const categoryColors = colorsList.filter((c) => c.category === catName);
+                if (categoryColors.length === 0) return null;
+
+                return (
+                  <div key={catName}>
+                    <h4 className="text-xs font-mono uppercase tracking-wider text-lime-400 mb-3">
+                      — {catName}
+                    </h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {categoryColors.map((color) => {
+                        const isSelected = selectedColor.hex === color.hex;
+                        return (
+                          <button
+                            key={color.hex}
+                            onClick={() => {
+                              setSelectedColor(color);
+                              setIsColorModalOpen(false);
+                            }}
+                            className={`flex items-center gap-3 p-3 rounded-2xl border transition-all text-left ${
+                              isSelected
+                                ? 'bg-slate-800 border-lime-500 shadow-md shadow-lime-500/10'
+                                : 'bg-slate-900/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900'
+                            }`}
+                          >
+                            <span
+                              className="w-7 h-7 rounded-full shadow-inner shrink-0 border border-black/20"
+                              style={{ backgroundColor: color.hex }}
+                            />
+                            <div className="overflow-hidden">
+                              <span className="block text-xs font-bold text-white truncate">{color.name}</span>
+                              <span className="block text-[10px] text-slate-500 font-mono">PLA Premium</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-8 pt-4 border-t border-slate-800 flex justify-end">
+              <button
+                onClick={() => setIsColorModalOpen(false)}
+                className="px-6 py-2.5 bg-lime-500 hover:bg-lime-400 text-slate-950 font-bold rounded-xl text-xs transition-all"
+              >
+                Confirmar e Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main id="catalogo" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
