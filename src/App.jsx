@@ -22,7 +22,7 @@ export default function App() {
   const [selectedColor, setSelectedColor] = useState('#84cc16');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const mountRef = useRef(null);
-  const cubeMeshRef = useRef(null);
+  const filamentMeshRef = useRef(null);
 
   const products = [
     {
@@ -87,49 +87,54 @@ export default function App() {
       currentRef.replaceChildren(renderer.domElement);
 
       const group = new THREE.Group();
-      const geometry = new THREE.BoxGeometry(1.3, 1.3, 1.3);
 
-      const materials = [
-        new THREE.MeshStandardMaterial({ color: new THREE.Color(selectedColor), roughness: 0.3, metalness: 0.2 }),
-        new THREE.MeshStandardMaterial({ color: new THREE.Color(selectedColor), roughness: 0.3, metalness: 0.2 }),
-        new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.1, metalness: 0.5 }),
-        new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.1 }),
-        new THREE.MeshStandardMaterial({ color: new THREE.Color(selectedColor), roughness: 0.3, metalness: 0.2 }),
-        new THREE.MeshStandardMaterial({ color: new THREE.Color(selectedColor), roughness: 0.3, metalness: 0.2 })
-      ];
+      // Criação do Rolo de Filamento 3D
+      // 1. O miolo/filamento enrolado (que muda de cor)
+      const filamentGeo = new THREE.CylinderGeometry(1.0, 1.0, 0.8, 32);
+      const filamentMat = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(selectedColor),
+        roughness: 0.4,
+        metalness: 0.1
+      });
+      const filamentMesh = new THREE.Mesh(filamentGeo, filamentMat);
+      filamentMeshRef.current = filamentMesh;
+      group.add(filamentMesh);
 
-      const cube = new THREE.Mesh(geometry, materials);
-      cubeMeshRef.current = cube;
-      group.add(cube);
+      // 2. Abas laterais do carretel (plástico escuro técnico)
+      const spoolMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.2, metalness: 0.5 });
+      
+      const flangeGeo1 = new THREE.CylinderGeometry(1.3, 1.3, 0.1, 32);
+      const flange1 = new THREE.Mesh(flangeGeo1, spoolMat);
+      flange1.position.y = 0.45;
+      group.add(flange1);
 
-      const edges = new THREE.EdgesGeometry(geometry);
-      const lineMaterial = new THREE.LineBasicMaterial({ color: 0xa3e635 });
-      const wireframe = new THREE.LineSegments(edges, lineMaterial);
-      wireframe.scale.set(1.01, 1.01, 1.01);
-      group.add(wireframe);
+      const flangeGeo2 = new THREE.CylinderGeometry(1.3, 1.3, 0.1, 32);
+      const flange2 = new THREE.Mesh(flangeGeo2, spoolMat);
+      flange2.position.y = -0.45;
+      group.add(flange2);
 
-      const ringGeo = new THREE.TorusGeometry(1.25, 0.025, 16, 100);
-      const ringMat = new THREE.MeshBasicMaterial({ color: 0x84cc16 });
-      const ring = new THREE.Mesh(ringGeo, ringMat);
-      ring.rotation.x = Math.PI / 3;
-      group.add(ring);
+      // 3. Furo central do carretel
+      const holeGeo = new THREE.CylinderGeometry(0.35, 0.35, 1.0, 16);
+      const holeMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
+      const hole = new THREE.Mesh(holeGeo, holeMat);
+      group.add(hole);
 
+      // Inclinar o carretel para dar um aspeto dinâmico em 3D
+      group.rotation.x = Math.PI / 6;
       scene.add(group);
 
       const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
       scene.add(ambientLight);
 
-      const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1.8);
       dirLight.position.set(5, 5, 5);
       scene.add(dirLight);
 
-      camera.position.set(2.6, 2.2, 3.2);
-      camera.lookAt(0, 0, 0);
+      camera.position.set(0, 0, 3.8);
 
       const animate = () => {
         animationFrameId = requestAnimationFrame(animate);
-        group.rotation.y += 0.01;
-        ring.rotation.z += 0.015;
+        group.rotation.y += 0.012;
         renderer.render(scene, camera);
       };
       animate();
@@ -147,25 +152,18 @@ export default function App() {
       return () => {
         window.removeEventListener('resize', handleResize);
         cancelAnimationFrame(animationFrameId);
-        if (renderer) {
-          renderer.dispose();
-        }
-        if (currentRef) {
-          currentRef.replaceChildren();
-        }
+        if (renderer) renderer.dispose();
+        if (currentRef) currentRef.replaceChildren();
       };
     } catch (err) {
       console.error(err);
     }
   }, []);
 
+  // Atualiza a cor do filamento dinamicamente ao selecionar
   useEffect(() => {
-    if (cubeMeshRef.current && Array.isArray(cubeMeshRef.current.material)) {
-      const newColor = new THREE.Color(selectedColor);
-      cubeMeshRef.current.material[0].color.set(newColor);
-      cubeMeshRef.current.material[1].color.set(newColor);
-      cubeMeshRef.current.material[4].color.set(newColor);
-      cubeMeshRef.current.material[5].color.set(newColor);
+    if (filamentMeshRef.current) {
+      filamentMeshRef.current.material.color.set(new THREE.Color(selectedColor));
     }
   }, [selectedColor]);
 
@@ -245,7 +243,7 @@ export default function App() {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-lime-500/10 border border-lime-500/30 text-lime-400 text-xs font-mono mb-6">
               <span className="w-2 h-2 rounded-full bg-lime-500 animate-ping" />
-              Impressão 3D de Alta Precisão (0.12mm)
+              Simulador de Filamento em Tempo Real
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-none mb-6">
               Fidget Toys 3D com <br />
@@ -254,7 +252,7 @@ export default function App() {
               </span>
             </h1>
             <p className="text-slate-400 text-base sm:text-lg mb-8 max-w-xl">
-              Modelos sensoriais articulados fabricados com filamentos ecológicos de alta durabilidade. Personalize as cores em tempo real antes da impressão!
+              Escolha a cor do rolo de PLA Premium abaixo e veja o filamento mudar instantaneamente antes de encomendar o seu fidget toy personalizado!
             </p>
 
             <div className="flex flex-wrap gap-4 mb-8">
@@ -264,12 +262,6 @@ export default function App() {
               >
                 Ver Catálogo
               </a>
-              <button
-                onClick={() => addToCart(products[0])}
-                className="px-6 py-3.5 bg-slate-900 border border-slate-700 hover:border-lime-500/50 text-white font-semibold rounded-xl transition-all"
-              >
-                Adicionar em Destaque
-              </button>
             </div>
 
             <div className="grid grid-cols-3 gap-4 pt-6 border-t border-slate-800/80 text-xs text-slate-400">
@@ -288,13 +280,13 @@ export default function App() {
           <div className="relative bg-slate-900/40 border border-slate-800 rounded-3xl p-6 backdrop-blur-xl">
             <div className="absolute top-4 left-4 z-10 flex items-center gap-2 text-xs font-mono text-slate-400 bg-slate-950/80 px-3 py-1.5 rounded-full border border-slate-800">
               <span className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
-              Visualizador 3D SolidAxis
+              Rolo de Filamento PLA 3D
             </div>
 
             <div ref={mountRef} className="w-full h-80 sm:h-96 rounded-2xl cursor-grab active:cursor-grabbing" />
 
             <div className="mt-4 pt-4 border-t border-slate-800/80 flex items-center justify-between">
-              <span className="text-xs font-mono text-slate-400">Cor do PLA:</span>
+              <span className="text-xs font-mono text-slate-400">Selecione a Cor:</span>
               <div className="flex items-center gap-3">
                 {[
                   { name: 'Verde Lime', hex: '#84cc16' },
@@ -458,7 +450,7 @@ export default function App() {
               {cart.length > 0 && (
                 <div className="pt-6 border-t border-slate-800 space-y-4">
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-slate-400">Total</span>
+                    <span className="text-slate-400">Data Total</span>
                     <span className="text-2xl font-black text-white">
                       R$ {totalCartPrice.toFixed(2).replace('.', ',')}
                     </span>
