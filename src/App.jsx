@@ -4,22 +4,14 @@ import * as THREE from 'three';
 // Logo Oficial SolidAxis em SVG
 const SolidAxisLogo = () => (
   <svg className="w-9 h-9" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-    {/* Anéis externos */}
     <circle cx="100" cy="100" r="85" stroke="#334155" strokeWidth="4" />
     <path d="M100 15 A85 85 0 0 1 185 100" stroke="#84cc16" strokeWidth="8" strokeLinecap="round" />
     <path d="M15 100 A85 85 0 0 1 100 185" stroke="#94a3b8" strokeWidth="6" strokeLinecap="round" />
-    
-    {/* Anéis intermediários */}
     <circle cx="100" cy="100" r="65" stroke="#1e293b" strokeWidth="6" />
     <path d="M100 35 A65 65 0 0 1 165 100" stroke="#a3e635" strokeWidth="6" />
-    
-    {/* Cubo Isométrico Central */}
     <g transform="translate(100,100)">
-      {/* Face Superior */}
       <path d="M0 -25 L22 -12 L0 0 L-22 -12 Z" fill="#e2e8f0" />
-      {/* Face Esquerda */}
       <path d="M-22 -12 L0 0 L0 25 L-22 13 Z" fill="#64748b" />
-      {/* Face Direita */}
       <path d="M0 0 L22 -12 L22 13 L0 25 Z" fill="#334155" />
     </g>
   </svg>
@@ -28,12 +20,11 @@ const SolidAxisLogo = () => (
 export default function App() {
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [selectedColor, setSelectedColor] = useState('#84cc16'); // Verde Lima inicial
+  const [selectedColor, setSelectedColor] = useState('#84cc16');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const mountRef = useRef(null);
   const meshRef = useRef(null);
 
-  // Produtos
   const products = [
     {
       id: 1,
@@ -77,7 +68,6 @@ export default function App() {
     }
   ];
 
-  // Configuração do Three.js para visualizador 3D
   useEffect(() => {
     const currentRef = mountRef.current;
     if (!currentRef) return;
@@ -93,22 +83,19 @@ export default function App() {
     renderer.setPixelRatio(window.devicePixelRatio);
     currentRef.appendChild(renderer.domElement);
 
-    // Cubo 3D da Logo SolidAxis com Materiais por Face
+    // Cubo 3D SolidAxis
     const boxGeometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
-
-    // Materiais das faces combinando com a paleta da logo SolidAxis
     const materials = [
-      new THREE.MeshStandardMaterial({ color: 0x84cc16, roughness: 0.2, metalness: 0.5 }), // Direita (Verde Lime)
-      new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.3, metalness: 0.4 }), // Esquerda (Cinza Grafite)
-      new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.1, metalness: 0.8 }), // Topo (Branco Prata)
-      new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.2 }), // Base (Dark)
-      new THREE.MeshStandardMaterial({ color: 0x84cc16, roughness: 0.2, metalness: 0.5 }), // Frente (Verde Lime)
-      new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.3 }), // Verso
+      new THREE.MeshStandardMaterial({ color: new THREE.Color(selectedColor), roughness: 0.2, metalness: 0.5 }),
+      new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.3, metalness: 0.4 }),
+      new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.1, metalness: 0.8 }),
+      new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.2 }),
+      new THREE.MeshStandardMaterial({ color: new THREE.Color(selectedColor), roughness: 0.2, metalness: 0.5 }),
+      new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.4, metalness: 0.3 }),
     ];
 
     const cubeMesh = new THREE.Mesh(boxGeometry, materials);
 
-    // Borda reluzente em Verde Neon
     const edgesGeometry = new THREE.EdgesGeometry(boxGeometry);
     const lineMaterial = new THREE.LineBasicMaterial({ color: 0xa3e635, linewidth: 2 });
     const wireframe = new THREE.LineSegments(edgesGeometry, lineMaterial);
@@ -117,7 +104,6 @@ export default function App() {
     meshRef.current = cubeMesh;
     scene.add(cubeMesh);
 
-    // Iluminação
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     scene.add(ambientLight);
 
@@ -131,7 +117,6 @@ export default function App() {
 
     camera.position.z = 3.2;
 
-    // Animação de rotação
     let animationFrameId;
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
@@ -141,7 +126,6 @@ export default function App() {
     };
     animate();
 
-    // Redimensionamento
     const handleResize = () => {
       if (!currentRef) return;
       const w = currentRef.clientWidth;
@@ -161,13 +145,13 @@ export default function App() {
     };
   }, []);
 
-  // Atualizar cor do modelo 3D ao selecionar
   useEffect(() => {
-  if (meshRef.current && Array.isArray(meshRef.current.material)) {
-    meshRef.current.material[0].color.set(selectedColor);
-    meshRef.current.material[4].color.set(selectedColor);
+    if (meshRef.current && Array.isArray(meshRef.current.material)) {
+      meshRef.current.material[0].color.set(selectedColor);
+      meshRef.current.material[4].color.set(selectedColor);
     }
   }, [selectedColor]);
+
   const addToCart = (product) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
@@ -194,10 +178,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#0a0c10] text-slate-100 font-sans selection:bg-lime-500 selection:text-black">
-      {/* Header Comercial SolidAxis */}
       <header className="sticky top-0 z-40 bg-[#0a0c10]/90 backdrop-blur-md border-b border-slate-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          {/* Brand Logo */}
           <div className="flex items-center gap-3">
             <SolidAxisLogo />
             <div>
@@ -210,7 +192,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Buscador de produtos */}
           <div className="hidden md:flex items-center flex-1 max-w-md mx-8">
             <div className="relative w-full">
               <input
@@ -224,7 +205,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Carrinho / Ações */}
           <div className="flex items-center gap-4">
             <button
               onClick={() => setIsCartOpen(true)}
@@ -243,7 +223,6 @@ export default function App() {
         </div>
       </header>
 
-      {/* Hero Section com Visualizador 3D Three.js */}
       <section className="relative overflow-hidden py-12 md:py-20 border-b border-slate-800/60 bg-gradient-to-b from-[#0a0c10] via-slate-950 to-[#0a0c10]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
@@ -289,7 +268,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Container do Visualizador 3D Interactive */}
           <div className="relative bg-slate-900/40 border border-slate-800 rounded-3xl p-6 backdrop-blur-xl">
             <div className="absolute top-4 left-4 z-10 flex items-center gap-2 text-xs font-mono text-slate-400 bg-slate-950/80 px-3 py-1.5 rounded-full border border-slate-800">
               <span className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
@@ -298,7 +276,6 @@ export default function App() {
 
             <div ref={mountRef} className="w-full h-80 sm:h-96 rounded-2xl cursor-grab active:cursor-grabbing" />
 
-            {/* Seletor de Cores PLA */}
             <div className="mt-4 pt-4 border-t border-slate-800/80 flex items-center justify-between">
               <span className="text-xs font-mono text-slate-400">Cor do PLA:</span>
               <div className="flex items-center gap-3">
@@ -325,7 +302,6 @@ export default function App() {
         </div>
       </section>
 
-      {/* Telemetria da Impressora Creality K1 */}
       <section className="bg-slate-950 border-b border-slate-800/60 py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-slate-400">
           <div className="flex items-center gap-3">
@@ -350,7 +326,6 @@ export default function App() {
         </div>
       </section>
 
-      {/* Catálogo de Produtos */}
       <main id="catalogo" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
           <div>
@@ -360,7 +335,6 @@ export default function App() {
             <p className="text-slate-400 text-sm">Escolha o seu modelo e receba em casa</p>
           </div>
 
-          {/* Filtro de Categorias */}
           <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0">
             {['Todos', 'Spinners', 'Cubos', 'Articulados'].map((cat) => (
               <button
@@ -378,7 +352,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Grid de Cards dos Produtos */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {filteredProducts.map((product) => (
             <div
@@ -431,7 +404,6 @@ export default function App() {
         </div>
       </main>
 
-      {/* Slide-over do Carrinho de Compras */}
       {isCartOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden">
           <div
@@ -511,7 +483,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Footer Oficial SolidAxis */}
       <footer className="bg-slate-950 border-t border-slate-800/80 py-12 text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           <div>
