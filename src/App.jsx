@@ -1,201 +1,228 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { 
-  ShoppingCart, Trash2, Box, Cpu, ShieldCheck, Truck, 
-  Search, Star, Lock, CheckCircle2, RefreshCw, Layers, Sparkles
-} from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://fidget-3d-backend.onrender.com';
+// Logo Oficial SolidAxis em SVG
+const SolidAxisLogo = () => (
+  <svg className="w-9 h-9" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+    {/* Anéis externos */}
+    <circle cx="100" cy="100" r="85" stroke="#334155" strokeWidth="4" />
+    <path d="M100 15 A85 85 0 0 1 185 100" stroke="#84cc16" strokeWidth="8" strokeLinecap="round" />
+    <path d="M15 100 A85 85 0 0 1 100 185" stroke="#94a3b8" strokeWidth="6" strokeLinecap="round" />
+    
+    {/* Anéis intermediários */}
+    <circle cx="100" cy="100" r="65" stroke="#1e293b" strokeWidth="6" />
+    <path d="M100 35 A65 65 0 0 1 165 100" stroke="#a3e635" strokeWidth="6" />
+    
+    {/* Cubo Isométrico Central */}
+    <g transform="translate(100,100)">
+      {/* Face Superior */}
+      <path d="M0 -25 L22 -12 L0 0 L-22 -12 Z" fill="#e2e8f0" />
+      {/* Face Esquerda */}
+      <path d="M-22 -12 L0 0 L0 25 L-22 13 Z" fill="#64748b" />
+      {/* Face Direita */}
+      <path d="M0 0 L22 -12 L22 13 L0 25 Z" fill="#334155" />
+    </g>
+  </svg>
+);
 
-// Componente 3D com Canvas e Three.js
-function ThreeViewer({ color }) {
-  const containerRef = useRef(null);
+export default function App() {
+  const [cart, setCart] = useState([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [selectedColor, setSelectedColor] = useState('#84cc16'); // Verde Lima inicial
+  const [selectedCategory, setSelectedCategory] = useState('Todos');
+  const mountRef = useRef(null);
   const meshRef = useRef(null);
 
+  // Produtos
+  const products = [
+    {
+      id: 1,
+      name: 'Spinner Articulado SolidAxis',
+      category: 'Spinners',
+      price: 34.90,
+      rating: 4.9,
+      reviews: 128,
+      image: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&q=80&w=400',
+      description: 'Design exclusivo de alta rotação impresso em PLA Premium com tolerância de 0.1mm na Creality K1.'
+    },
+    {
+      id: 2,
+      name: 'Cubo Infinito Sensorial',
+      category: 'Cubos',
+      price: 42.00,
+      rating: 5.0,
+      reviews: 94,
+      image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=400',
+      description: 'Engrenagens dobráveis para alívio de estresse. Movimento fluido contínuo.'
+    },
+    {
+      id: 3,
+      name: 'Lagarta Flexível 3D',
+      category: 'Articulados',
+      price: 29.90,
+      rating: 4.8,
+      reviews: 210,
+      image: 'https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&q=80&w=400',
+      description: 'Corpo multi-articulado impresso em peça única sem necessidade de montagem.'
+    },
+    {
+      id: 4,
+      name: 'Engrenagem Giroscópica Hex',
+      category: 'Spinners',
+      price: 49.90,
+      rating: 4.9,
+      reviews: 76,
+      image: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&q=80&w=400',
+      description: 'Anéis eixos triplos independentes em verde neon e acabamento acetinado.'
+    }
+  ];
+
+  // Configuração do Three.js para visualizador 3D
   useEffect(() => {
-    if (!containerRef.current) return;
-    const width = containerRef.current.clientWidth;
-    const height = containerRef.current.clientHeight;
+    const currentRef = mountRef.current;
+    if (!currentRef) return;
+
+    const width = currentRef.clientWidth;
+    const height = currentRef.clientHeight;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 1000);
-    camera.position.set(0, 0, 5);
-
+    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    
-    // Limpa o container antes de anexar o canvas
-    containerRef.current.innerHTML = '';
-    containerRef.current.appendChild(renderer.domElement);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    currentRef.appendChild(renderer.domElement);
 
-    // Iluminação Profissional
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-    scene.add(ambientLight);
-
-    const dirLight1 = new THREE.DirectionalLight(0x06b6d4, 2.5);
-    dirLight1.position.set(5, 5, 5);
-    scene.add(dirLight1);
-
-    const dirLight2 = new THREE.DirectionalLight(0xec4899, 2);
-    dirLight2.position.set(-5, -5, -2);
-    scene.add(dirLight2);
-
-    // Geometria TorusKnot representando o Fidget 3D
+    // Geometria 3D
     const geometry = new THREE.TorusKnotGeometry(1, 0.35, 128, 32);
     const material = new THREE.MeshStandardMaterial({
-      color: color,
+      color: new THREE.Color(selectedColor),
       roughness: 0.25,
-      metalness: 0.65,
+      metalness: 0.6,
     });
 
     const mesh = new THREE.Mesh(geometry, material);
     meshRef.current = mesh;
     scene.add(mesh);
 
+    // Iluminação
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    scene.add(ambientLight);
+
+    const dirLight1 = new THREE.DirectionalLight(0x84cc16, 2.0);
+    dirLight1.position.set(5, 5, 5);
+    scene.add(dirLight1);
+
+    const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 1.2);
+    dirLight2.position.set(-5, -5, -2);
+    scene.add(dirLight2);
+
+    camera.position.z = 3.2;
+
+    // Animação de rotação
     let animationFrameId;
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
-      if (meshRef.current) {
-        meshRef.current.rotation.x += 0.008;
-        meshRef.current.rotation.y += 0.012;
-      }
+      mesh.rotation.x += 0.008;
+      mesh.rotation.y += 0.012;
       renderer.render(scene, camera);
     };
     animate();
 
+    // Redimensionamento
     const handleResize = () => {
-      if (!containerRef.current) return;
-      const newW = containerRef.current.clientWidth;
-      const newH = containerRef.current.clientHeight;
-      camera.aspect = newW / newH;
+      if (!currentRef) return;
+      const w = currentRef.clientWidth;
+      const h = currentRef.clientHeight;
+      camera.aspect = w / h;
       camera.updateProjectionMatrix();
-      renderer.setSize(newW, newH);
+      renderer.setSize(w, h);
     };
-
     window.addEventListener('resize', handleResize);
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
-      renderer.dispose();
+      cancelAnimationFrame(animationFrameId);
+      if (currentRef && renderer.domElement) {
+        currentRef.removeChild(renderer.domElement);
+      }
     };
   }, []);
 
-  // Atualização dinâmica da cor do filamento
+  // Atualizar cor do modelo 3D ao selecionar
   useEffect(() => {
-    if (meshRef.current && meshRef.current.material) {
-      meshRef.current.material.color.set(color);
+    if (meshRef.current) {
+      meshRef.current.material.color.set(selectedColor);
     }
-  }, [color]);
+  }, [selectedColor]);
 
-  return <div ref={containerRef} className="w-full h-full min-h-[350px] cursor-grab active:cursor-grabbing" />;
-}
-
-export default function App() {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedColor, setSelectedColor] = useState('#06b6d4');
-  const [cart, setCart] = useState([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Todos');
-  const [printProgress, setPrintProgress] = useState(68);
-
-  // Busca produtos do Back-end
-  useEffect(() => {
-    fetch(`${API_URL}/products`)
-      .then(res => res.json())
-      .then(data => {
-        setProducts(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Erro ao buscar produtos:', err);
-        // Fallback para exibição em caso de falha de conexão inicial
-        setProducts([
-          { id: 1, name: 'Cyber Fidget Spinner 3D', price: 39.90, category: 'Spinners', image: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=500', description: 'Spinner ergonômico de alta rotação impresso com filamento PLA Premium.' },
-          { id: 2, name: 'Cube Fidget Infinito', price: 29.90, category: 'Cubos', image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500', description: 'Cubo articulado sensorial para alívio imediato de estresse e ansiedade.' },
-          { id: 3, name: 'Dragão Articulado 3D', price: 69.90, category: 'Articulados', image: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=500', description: 'Modelo altamente detalhado com mais de 20 pontos de articulação flexíveis.' },
-        ]);
-        setLoading(false);
-      });
-  }, []);
-
-  // Simulação dinâmica da barra de progresso da Impressora 3D
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPrintProgress(prev => (prev >= 100 ? 10 : prev + 1));
-    }, 2500);
-    return () => clearInterval(interval);
-  }, []);
-
-  const addToCart = (product, color = selectedColor) => {
-    setCart(prev => {
-      const existingIndex = prev.findIndex(item => item.id === product.id && item.color === color);
-      if (existingIndex > -1) {
-        const updated = [...prev];
-        updated[existingIndex].quantity += 1;
-        return updated;
+  const addToCart = (product) => {
+    setCart((prev) => {
+      const existing = prev.find((item) => item.id === product.id);
+      if (existing) {
+        return prev.map((item) =>
+          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        );
       }
-      return [...prev, { ...product, color, quantity: 1 }];
+      return [...prev, { ...product, quantity: 1, color: selectedColor }];
     });
     setIsCartOpen(true);
   };
 
-  const removeFromCart = (index) => {
-    setCart(prev => prev.filter((_, i) => i !== index));
+  const removeFromCart = (id) => {
+    setCart((prev) => prev.filter((item) => item.id !== id));
   };
 
-  const totalCart = cart.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const freeShippingThreshold = 120.00;
-  const progressToFreeShipping = Math.min((totalCart / freeShippingThreshold) * 100, 100);
+  const totalCartPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'Todos' || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredProducts =
+    selectedCategory === 'Todos'
+      ? products
+      : products.filter((p) => p.category === selectedCategory);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      
-      {/* 1. Header & Navegação */}
-      <header className="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
-          
-          {/* Logo */}
-          <div className="flex items-center gap-3 cursor-pointer">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-pink-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-              <Cpu className="w-6 h-6 text-black font-bold" />
-            </div>
+    <div className="min-h-screen bg-[#0a0c10] text-slate-100 font-sans selection:bg-lime-500 selection:text-black">
+      {/* Header Comercial SolidAxis */}
+      <header className="sticky top-0 z-40 bg-[#0a0c10]/90 backdrop-blur-md border-b border-slate-800/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+          {/* Brand Logo */}
+          <div className="flex items-center gap-3">
+            <SolidAxisLogo />
             <div>
-              <span className="text-xl font-extrabold tracking-wider text-gradient uppercase">CYBER FIDGET 3D</span>
-              <span className="block text-[10px] text-slate-400 font-mono tracking-widest uppercase">E-Commerce & Tech Lab</span>
+              <span className="text-2xl font-black tracking-wider text-white">
+                SOLID<span className="text-lime-500">AXIS</span>
+              </span>
+              <span className="block text-[10px] tracking-widest text-slate-400 font-mono -mt-1 uppercase">
+                Manufacture 3D Lab
+              </span>
             </div>
           </div>
 
-          {/* Barra de Pesquisa */}
-          <div className="hidden md:flex flex-1 max-w-md relative">
-            <input
-              type="text"
-              placeholder="Buscar fidgets, articulados, spinners..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-cyan-500 transition-colors"
-            />
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+          {/* Buscador de produtos */}
+          <div className="hidden md:flex items-center flex-1 max-w-md mx-8">
+            <div className="relative w-full">
+              <input
+                type="text"
+                placeholder="Buscar fidgets articulados, spinners, cubos..."
+                className="w-full bg-slate-900/90 border border-slate-800 rounded-full py-2.5 pl-10 pr-4 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-lime-500 transition-colors"
+              />
+              <svg className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
           </div>
 
-          {/* Ações & Carrinho */}
+          {/* Carrinho / Ações */}
           <div className="flex items-center gap-4">
             <button
               onClick={() => setIsCartOpen(true)}
-              className="relative p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-full transition-colors border border-slate-700"
+              className="relative p-2.5 bg-slate-900 border border-slate-800 rounded-xl hover:border-lime-500/50 transition-all text-slate-200 hover:text-lime-400"
             >
-              <ShoppingCart className="w-5 h-5" />
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
               {cart.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-[11px] font-bold w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
+                <span className="absolute -top-1.5 -right-1.5 bg-lime-500 text-slate-950 text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
                   {cart.reduce((a, b) => a + b.quantity, 0)}
                 </span>
               )}
@@ -204,277 +231,316 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
-        
-        {/* 2. Hero Section com Visualizador 3D */}
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-gradient-to-br from-slate-900 via-slate-900/60 to-slate-950 p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl relative overflow-hidden">
-          <div className="lg:col-span-6 space-y-6 z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-semibold">
-              <Sparkles className="w-3.5 h-3.5" /> Impressão 3D de Alta Precisão (0.12mm)
+      {/* Hero Section com Visualizador 3D Three.js */}
+      <section className="relative overflow-hidden py-12 md:py-20 border-b border-slate-800/60 bg-gradient-to-b from-[#0a0c10] via-slate-950 to-[#0a0c10]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-lime-500/10 border border-lime-500/30 text-lime-400 text-xs font-mono mb-6">
+              <span className="w-2 h-2 rounded-full bg-lime-500 animate-ping" />
+              Impressão 3D de Alta Precisão (0.12mm)
             </div>
-            <h1 className="text-4xl sm:text-5xl font-black tracking-tight leading-tight">
-              Fidget Toys 3D com <span className="text-gradient">Design Cyberpunk</span>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-none mb-6">
+              Fidget Toys 3D com <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-lime-400 via-emerald-400 to-slate-200">
+                Precisão SolidAxis
+              </span>
             </h1>
-            <p className="text-slate-400 text-base leading-relaxed">
+            <p className="text-slate-400 text-base sm:text-lg mb-8 max-w-xl">
               Modelos sensoriais articulados fabricados com filamentos ecológicos de alta durabilidade. Personalize as cores em tempo real antes da impressão!
             </p>
 
-            {/* Benefícios Rápidos */}
-            <div className="grid grid-cols-3 gap-4 pt-2 border-t border-slate-800/80">
+            <div className="flex flex-wrap gap-4 mb-8">
+              <a
+                href="#catalogo"
+                className="px-6 py-3.5 bg-lime-500 hover:bg-lime-400 text-slate-950 font-bold rounded-xl shadow-lg shadow-lime-500/20 transition-all hover:scale-105"
+              >
+                Ver Catálogo
+              </a>
+              <button
+                onClick={() => addToCart(products[0])}
+                className="px-6 py-3.5 bg-slate-900 border border-slate-700 hover:border-lime-500/50 text-white font-semibold rounded-xl transition-all"
+              >
+                Adicionar em Destaque
+              </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 pt-6 border-t border-slate-800/80 text-xs text-slate-400">
               <div className="flex items-center gap-2">
-                <Truck className="w-4 h-4 text-cyan-400" />
-                <span className="text-xs text-slate-300 font-medium">Envio em 24h</span>
+                <span className="text-lime-400">⚡</span> Envio em 24h
               </div>
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs text-slate-300 font-medium">PLA Premium</span>
+                <span className="text-lime-400">🛡️</span> PLA Premium
               </div>
               <div className="flex items-center gap-2">
-                <Lock className="w-4 h-4 text-pink-400" />
-                <span className="text-xs text-slate-300 font-medium">Pix & Cartão</span>
+                <span className="text-lime-400">💳</span> Pix & Cartão
               </div>
             </div>
           </div>
 
-          {/* Visualizador 3D Interativo */}
-          <div className="lg:col-span-6 relative bg-slate-950/80 rounded-2xl border border-slate-800/80 p-4 shadow-inner flex flex-col items-center">
-            <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-slate-900/80 px-3 py-1 rounded-full border border-slate-700 text-xs text-slate-300 font-mono">
-              <Layers className="w-3.5 h-3.5 text-cyan-400" /> Visualizador 3D Realtime
+          {/* Container do Visualizador 3D Interactive */}
+          <div className="relative bg-slate-900/40 border border-slate-800 rounded-3xl p-6 backdrop-blur-xl">
+            <div className="absolute top-4 left-4 z-10 flex items-center gap-2 text-xs font-mono text-slate-400 bg-slate-950/80 px-3 py-1.5 rounded-full border border-slate-800">
+              <span className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
+              Visualizador 3D Realtime
             </div>
-            
-            <ThreeViewer color={selectedColor} />
 
-            {/* Paleta de Cores do Filamento */}
-            <div className="mt-4 flex items-center gap-3 bg-slate-900/90 p-2.5 rounded-full border border-slate-800 z-10">
-              <span className="text-xs text-slate-400 font-mono px-2">Cor do PLA:</span>
-              {[
-                { name: 'Cyan Neon', hex: '#06b6d4' },
-                { name: 'Magenta Tech', hex: '#ec4899' },
-                { name: 'Verde Matrix', hex: '#10b981' },
-                { name: 'Roxo Cyber', hex: '#8b5cf6' },
-                { name: 'Preto Carbono', hex: '#1e293b' },
-              ].map((c) => (
-                <button
-                  key={c.hex}
-                  onClick={() => setSelectedColor(c.hex)}
-                  style={{ backgroundColor: c.hex }}
-                  className={`w-6 h-6 rounded-full transition-transform hover:scale-110 ${selectedColor === c.hex ? 'ring-2 ring-white scale-110' : ''}`}
-                  title={c.name}
-                />
-              ))}
+            <div ref={mountRef} className="w-full h-80 sm:h-96 rounded-2xl cursor-grab active:cursor-grabbing" />
+
+            {/* Seletor de Cores PLA */}
+            <div className="mt-4 pt-4 border-t border-slate-800/80 flex items-center justify-between">
+              <span className="text-xs font-mono text-slate-400">Cor do PLA:</span>
+              <div className="flex items-center gap-3">
+                {[
+                  { name: 'Verde Lime', hex: '#84cc16' },
+                  { name: 'Cyber Magenta', hex: '#ec4899' },
+                  { name: 'Prata Metal', hex: '#94a3b8' },
+                  { name: 'Roxo Deep', hex: '#8b5cf6' },
+                  { name: 'Azul Neon', hex: '#06b6d4' }
+                ].map((color) => (
+                  <button
+                    key={color.hex}
+                    onClick={() => setSelectedColor(color.hex)}
+                    style={{ backgroundColor: color.hex }}
+                    className={`w-7 h-7 rounded-full transition-all transform hover:scale-125 ${
+                      selectedColor === color.hex ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-950 scale-110' : 'opacity-80'
+                    }`}
+                    title={color.name}
+                  />
+                ))}
+              </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* 3. Status da Impressora 3D (Telemetria) */}
-        <section className="bg-slate-900/50 rounded-2xl border border-slate-800/80 p-5 flex flex-col md:flex-row items-center justify-between gap-4">
+      {/* Telemetria da Impressora Creality K1 */}
+      <section className="bg-slate-950 border-b border-slate-800/60 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-slate-400">
           <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-emerald-500 animate-ping" />
-            <div>
-              <h3 className="text-sm font-semibold text-slate-200">Telemetria da Fazenda de Impressão</h3>
-              <p className="text-xs text-slate-400 font-mono">Creality HI • Bico 0.4mm • Temperatura Extrusora: 215°C</p>
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lime-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-lime-500"></span>
+            </span>
+            <span>
+              <strong className="text-slate-200">Telemetria da Fazenda de Impressão SolidAxis</strong>
+            </span>
+          </div>
+          <div className="flex items-center gap-6">
+            <span>Creality K1 • Bico 0.4mm • Temp: 215°C</span>
+            <div className="hidden sm:flex items-center gap-2">
+              <span>Lote em produção:</span>
+              <div className="w-24 bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div className="bg-lime-500 h-full w-[77%]" />
+              </div>
+              <span className="text-lime-400">77%</span>
             </div>
           </div>
-          <div className="w-full md:w-64 space-y-1.5">
-            <div className="flex justify-between text-xs font-mono text-slate-400">
-              <span>Lote em produção</span>
-              <span className="text-cyan-400 font-bold">{printProgress}%</span>
-            </div>
-            <div className="w-full bg-slate-950 rounded-full h-2 overflow-hidden border border-slate-800">
-              <div 
-                className="bg-gradient-to-r from-cyan-500 to-pink-500 h-full rounded-full transition-all duration-500" 
-                style={{ width: `${printProgress}%` }}
-              />
-            </div>
-          </div>
-        </section>
+        </div>
+      </section>
 
-        {/* 4. Catálogo de Produtos */}
-        <section className="space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight">Catálogo de Fidgets</h2>
-              <p className="text-sm text-slate-400">Escolha o seu modelo e receba em casa</p>
-            </div>
-
-            {/* Categorias */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0">
-              {['Todos', 'Spinners', 'Cubos', 'Articulados'].map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
-                    selectedCategory === cat 
-                      ? 'bg-cyan-500 text-black font-bold shadow-lg shadow-cyan-500/20' 
-                      : 'bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
+      {/* Catálogo de Produtos */}
+      <main id="catalogo" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              Catálogo de Fidgets
+            </h2>
+            <p className="text-slate-400 text-sm">Escolha o seu modelo e receba em casa</p>
           </div>
 
-          {/* Grid de Produtos */}
-          {loading ? (
-            <div className="text-center py-12 text-slate-500 font-mono flex items-center justify-center gap-2">
-              <RefreshCw className="w-5 h-5 animate-spin text-cyan-500" /> Carregando produtos da fábrica...
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProducts.map((product) => (
-                <div key={product.id} className="group bg-slate-900/60 rounded-2xl border border-slate-800/80 hover:border-cyan-500/50 transition-all duration-300 overflow-hidden flex flex-col hover:shadow-xl hover:shadow-cyan-500/5">
-                  <div className="relative h-56 overflow-hidden bg-slate-950">
-                    <img 
-                      src={product.image || "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=500"} 
-                      alt={product.name} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
-                    />
-                    <span className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-md border border-slate-800 text-cyan-400 text-[10px] font-mono px-2.5 py-1 rounded-full uppercase">
-                      {product.category || 'Fidget 3D'}
-                    </span>
-                  </div>
+          {/* Filtro de Categorias */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0">
+            {['Todos', 'Spinners', 'Cubos', 'Articulados'].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                  selectedCategory === cat
+                    ? 'bg-lime-500 text-slate-950 font-bold'
+                    : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
 
-                  <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-1 text-amber-400 text-xs">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className="w-3.5 h-3.5 fill-current" />
-                        ))}
-                        <span className="text-slate-400 text-[11px] ml-1">(4.9)</span>
-                      </div>
-                      <h3 className="font-bold text-lg group-hover:text-cyan-400 transition-colors">{product.name}</h3>
-                      <p className="text-slate-400 text-xs line-clamp-2">{product.description}</p>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-800/60">
-                      <div>
-                        <span className="text-xs text-slate-500 block font-mono">A partir de</span>
-                        <span className="text-xl font-extrabold text-white">R$ {Number(product.price).toFixed(2)}</span>
-                      </div>
-                      <button
-                        onClick={() => addToCart(product)}
-                        className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-md shadow-cyan-500/10 active:scale-95"
-                      >
-                        <ShoppingCart className="w-4 h-4" /> Comprar
-                      </button>
-                    </div>
-                  </div>
+        {/* Grid de Cards dos Produtos */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {filteredProducts.map((product) => (
+            <div
+              key={product.id}
+              className="group bg-slate-900/60 border border-slate-800/80 hover:border-lime-500/40 rounded-2xl p-4 transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between"
+            >
+              <div>
+                <div className="relative aspect-square rounded-xl overflow-hidden mb-4 bg-slate-950">
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
+                  />
+                  <span className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-md text-lime-400 text-[10px] font-mono px-2.5 py-1 rounded-full border border-slate-800">
+                    {product.category}
+                  </span>
                 </div>
-              ))}
+
+                <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
+                  <span className="flex items-center gap-1 text-amber-400 font-semibold">
+                    ★ {product.rating} <span className="text-slate-500">({product.reviews})</span>
+                  </span>
+                  <span className="font-mono text-lime-400/80">In Stock</span>
+                </div>
+
+                <h3 className="font-bold text-white group-hover:text-lime-400 transition-colors mb-2">
+                  {product.name}
+                </h3>
+                <p className="text-slate-400 text-xs line-clamp-2 mb-4">
+                  {product.description}
+                </p>
+              </div>
+
+              <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-slate-500 block">Preço</span>
+                  <span className="text-xl font-black text-white">
+                    R$ {product.price.toFixed(2).replace('.', ',')}
+                  </span>
+                </div>
+                <button
+                  onClick={() => addToCart(product)}
+                  className="px-4 py-2.5 bg-lime-500 hover:bg-lime-400 text-slate-950 font-bold rounded-xl text-xs transition-all hover:scale-105"
+                >
+                  Comprar
+                </button>
+              </div>
             </div>
-          )}
-        </section>
+          ))}
+        </div>
       </main>
 
-      {/* 5. Carrinho Deslizante (Slide-over Cart) */}
+      {/* Slide-over do Carrinho de Compras */}
       {isCartOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden bg-slate-950/80 backdrop-blur-sm flex justify-end">
-          <div className="w-full max-w-md bg-slate-900 border-l border-slate-800 h-full p-6 flex flex-col justify-between shadow-2xl animate-in slide-in-from-right duration-300">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                <div className="flex items-center gap-2">
-                  <ShoppingCart className="w-5 h-5 text-cyan-400" />
-                  <h2 className="text-lg font-bold">Seu Carrinho</h2>
+        <div className="fixed inset-0 z-50 overflow-hidden">
+          <div
+            onClick={() => setIsCartOpen(false)}
+            className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"
+          />
+          <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+            <div className="w-screen max-w-md bg-[#0a0c10] border-l border-slate-800 p-6 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-6 border-b border-slate-800">
+                  <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                    <span>Carrinho</span>
+                    <span className="text-xs font-mono text-lime-400">({cart.length} itens)</span>
+                  </h2>
+                  <button
+                    onClick={() => setIsCartOpen(false)}
+                    className="p-2 text-slate-400 hover:text-white"
+                  >
+                    ✕
+                  </button>
                 </div>
-                <button onClick={() => setIsCartOpen(false)} className="text-slate-400 hover:text-white text-sm font-mono">
-                  [Fechar ✕]
-                </button>
-              </div>
 
-              {/* Progresso de Frete Grátis */}
-              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5">
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-400">Frete Grátis acima de R$ 120,00</span>
-                  <span className="text-cyan-400 font-bold">{progressToFreeShipping.toFixed(0)}%</span>
-                </div>
-                <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-cyan-500 h-full transition-all" style={{ width: `${progressToFreeShipping}%` }} />
-                </div>
-              </div>
-
-              {/* Itens do Carrinho */}
-              {cart.length === 0 ? (
-                <div className="text-center py-12 text-slate-500 text-sm space-y-2">
-                  <Box className="w-8 h-8 mx-auto text-slate-600" />
-                  <p>Seu carrinho está vazio no momento.</p>
-                </div>
-              ) : (
-                <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1">
-                  {cart.map((item, index) => (
-                    <div key={index} className="flex items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <div className="flex items-center gap-3">
-                        <div className="w-4 h-4 rounded-full border border-white/20" style={{ backgroundColor: item.color }} />
-                        <div>
-                          <h4 className="text-sm font-bold">{item.name}</h4>
-                          <span className="text-xs text-slate-400 font-mono">Qtd: {item.quantity} × R$ {Number(item.price).toFixed(2)}</span>
+                <div className="py-6 space-y-4 max-h-[60vh] overflow-y-auto">
+                  {cart.length === 0 ? (
+                    <p className="text-slate-500 text-sm text-center py-8">
+                      Seu carrinho está vazio no momento.
+                    </p>
+                  ) : (
+                    cart.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between p-3 bg-slate-900/80 border border-slate-800 rounded-xl"
+                      >
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="w-12 h-12 rounded-lg object-cover"
+                          />
+                          <div>
+                            <h4 className="text-xs font-bold text-white">{item.name}</h4>
+                            <span className="text-xs text-slate-400">
+                              R$ {item.price.toFixed(2)} x {item.quantity}
+                            </span>
+                          </div>
                         </div>
+                        <button
+                          onClick={() => removeFromCart(item.id)}
+                          className="text-red-400 hover:text-red-300 text-xs px-2 py-1"
+                        >
+                          Remover
+                        </button>
                       </div>
-                      <button onClick={() => removeFromCart(index)} className="text-rose-500 hover:text-rose-400 p-1">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {cart.length > 0 && (
+                <div className="pt-6 border-t border-slate-800 space-y-4">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-slate-400">Total</span>
+                    <span className="text-2xl font-black text-white">
+                      R$ {totalCartPrice.toFixed(2).replace('.', ',')}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => alert('Checkout em integração com Mercado Pago!')}
+                    className="w-full py-4 bg-lime-500 hover:bg-lime-400 text-slate-950 font-bold rounded-xl transition-all text-sm uppercase tracking-wider"
+                  >
+                    Finalizar Pedido com Pix
+                  </button>
                 </div>
               )}
             </div>
-
-            {/* Total e Checkout */}
-            {cart.length > 0 && (
-              <div className="space-y-4 border-t border-slate-800 pt-4">
-                <div className="flex justify-between items-center text-lg font-bold">
-                  <span>Total:</span>
-                  <span className="text-cyan-400">R$ {totalCart.toFixed(2)}</span>
-                </div>
-                <button 
-                  onClick={() => alert("Integração do checkout ativada! Em breve com Mercado Pago e Pix Oficial.")}
-                  className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-extrabold py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20 active:scale-98 transition-all"
-                >
-                  <CheckCircle2 className="w-5 h-5" /> Finalizar Pedido via Pix
-                </button>
-              </div>
-            )}
           </div>
         </div>
       )}
 
-      {/* 6. Rodapé Comercial */}
-      <footer className="bg-slate-900 border-t border-slate-800 mt-16 text-slate-400 text-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div className="space-y-3">
-            <span className="text-base font-extrabold text-gradient uppercase">CYBER FIDGET 3D</span>
-            <p className="text-slate-500 leading-relaxed">
-              Desenvolvimento e manufatura aditiva de Fidget Toys de alta performance com filamentos sustentáveis.
+      {/* Footer Oficial SolidAxis */}
+      <footer className="bg-slate-950 border-t border-slate-800/80 py-12 text-xs text-slate-500">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <SolidAxisLogo />
+              <span className="text-base font-bold text-white">SOLIDAXIS</span>
+            </div>
+            <p className="text-slate-400">
+              E-commerce oficial de manufatura aditiva B2C focado em Fidget Toys 3D.
             </p>
           </div>
-          <div className="space-y-2">
-            <h4 className="text-slate-200 font-bold">Navegação</h4>
-            <ul className="space-y-1">
-              <li><a href="#" className="hover:text-cyan-400 transition-colors">Início</a></li>
-              <li><a href="#" className="hover:text-cyan-400 transition-colors">Todos os Produtos</a></li>
-              <li><a href="#" className="hover:text-cyan-400 transition-colors">Fazenda de Impressão</a></li>
+          <div>
+            <h4 className="font-bold text-white mb-3">Nossos Produtos</h4>
+            <ul className="space-y-2">
+              <li>Spinners Articulados</li>
+              <li>Cubos Infinitos</li>
+              <li>Lagartas & Dragões</li>
             </ul>
           </div>
-          <div className="space-y-2">
-            <h4 className="text-slate-200 font-bold">Ajuda & Suporte</h4>
-            <ul className="space-y-1">
-              <li><a href="#" className="hover:text-cyan-400 transition-colors">Termos e Condições</a></li>
-              <li><a href="#" className="hover:text-cyan-400 transition-colors">Política de Privacidade (LGPD)</a></li>
-              <li><a href="#" className="hover:text-cyan-400 transition-colors">Envios e Devoluções</a></li>
+          <div>
+            <h4 className="font-bold text-white mb-3">Garantia & Qualidade</h4>
+            <ul className="space-y-2">
+              <li>Impressoras Creality K1</li>
+              <li>Filamentos Biodegradáveis</li>
+              <li>Tolerância de Impressão 0.1mm</li>
             </ul>
           </div>
-          <div className="space-y-2">
-            <h4 className="text-slate-200 font-bold">Atendimento</h4>
-            <p className="text-slate-400">Seg. a Sex. das 09h às 18h</p>
-            <p className="text-cyan-400 font-mono font-bold">suporte@cyberfidget3d.com.br</p>
+          <div>
+            <h4 className="font-bold text-white mb-3">Atendimento</h4>
+            <p className="text-slate-400 mb-2">Suporte comercial SolidAxis</p>
+            <span className="text-lime-400 font-mono">suporte@solidaxis.com.br</span>
           </div>
         </div>
-        <div className="border-t border-slate-800/80 py-4 text-center text-slate-600 font-mono">
-          © 2026 CYBER FIDGET 3D. Todos os direitos reservados.
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-slate-900 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <p>© 2026 SolidAxis 3D Lab. Todos os direitos reservados.</p>
+          <div className="flex gap-4 text-slate-400">
+            <a href="#" className="hover:text-white">Termos</a>
+            <a href="#" className="hover:text-white">Privacidade</a>
+          </div>
         </div>
       </footer>
-
     </div>
   );
 }
