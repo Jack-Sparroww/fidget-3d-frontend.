@@ -22,9 +22,9 @@ export default function App() {
   const [isColorModalOpen, setIsColorModalOpen] = useState(false);
   
   const [selectedColor, setSelectedColor] = useState({ 
-    name: 'Dourado Silk', 
-    colors: ['#eab308', '#ca8a04'], 
-    category: 'Silk' 
+    name: 'Preto Unicolor', 
+    colors: ['#18181b'], 
+    category: 'Unicolor' 
   });
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   
@@ -33,13 +33,22 @@ export default function App() {
   const spoolGroupRef = useRef(null);
 
   const colorsList = [
+    // Unicolors
+    { name: 'Preto Unicolor', colors: ['#18181b'], category: 'Unicolor' },
+    { name: 'Branco Unicolor', colors: ['#f4f4f5'], category: 'Unicolor' },
+    { name: 'Cinza Unicolor', colors: ['#71717a'], category: 'Unicolor' },
+    { name: 'Azul Royal Unicolor', colors: ['#1d4ed8'], category: 'Unicolor' },
+    { name: 'Vermelho Unicolor', colors: ['#b91c1c'], category: 'Unicolor' },
+    // Silk
     { name: 'Dourado Silk', colors: ['#eab308', '#facc15'], category: 'Silk' },
     { name: 'Prata Silk', colors: ['#94a3b8', '#cbd5e1'], category: 'Silk' },
     { name: 'Vermelho Silk', colors: ['#dc2626', '#ef4444'], category: 'Silk' },
     { name: 'Azul Silk', colors: ['#2563eb', '#3b82f6'], category: 'Silk' },
-    { name: 'Preto Matte', colors: ['#18181b', '#27272a'], category: 'Matte' },
-    { name: 'Branco Matte', colors: ['#f4f4f5', '#e4e4e7'], category: 'Matte' },
-    { name: 'Cinza Matte', colors: ['#71717a', '#a1a1aa'], category: 'Matte' },
+    // Matte
+    { name: 'Preto Matte', colors: ['#27272a', '#3f3f46'], category: 'Matte' },
+    { name: 'Branco Matte', colors: ['#e4e4e7', '#d4d4d8'], category: 'Matte' },
+    { name: 'Cinza Matte', colors: ['#52525b', '#71717a'], category: 'Matte' },
+    // Dual & Tricolor
     { name: 'Azul/Verde DualColor', colors: ['#06b6d4', '#10b981'], category: 'DualColor' },
     { name: 'Rosa/Roxo DualColor', colors: ['#d946ef', '#8b5cf6'], category: 'DualColor' },
     { name: 'Cobre/Dourado DualColor', colors: ['#d97706', '#f59e0b'], category: 'DualColor' },
@@ -115,7 +124,6 @@ export default function App() {
 
       filamentLayersRef.current = [];
 
-      // Criamos várias faixas/camadas para compor o efeito Multicolor/Dual/Tricolor de forma viva
       const totalSlices = 12;
       const sliceHeight = 0.76 / totalSlices;
 
@@ -130,14 +138,12 @@ export default function App() {
         });
 
         const mesh = new THREE.Mesh(geo, mat);
-        // Distribui as fatias ao longo do eixo Y do carretel
         mesh.position.y = -0.38 + (i * sliceHeight) + (sliceHeight / 2);
         
         group.add(mesh);
         filamentLayersRef.current.push({ mesh, material: mat });
       }
 
-      // Núcleo e abas do carretel
       const coreGeo = new THREE.CylinderGeometry(0.72, 0.72, 0.78, 32);
       const coreMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.9 });
       group.add(new THREE.Mesh(coreGeo, coreMat));
@@ -182,11 +188,10 @@ export default function App() {
       let isDragging = false;
       let previousMousePosition = { x: 0, y: 0 };
 
-      // Animação contínua e fluida em 360°
       const animate = () => {
         animationFrameId = requestAnimationFrame(animate);
         if (!isDragging && spoolGroupRef.current) {
-          spoolGroupRef.current.rotation.y += 0.008; // Rotação automática suave
+          spoolGroupRef.current.rotation.y += 0.008;
         }
         renderer.render(scene, camera);
       };
@@ -239,16 +244,24 @@ export default function App() {
     }
   }, []);
 
-  // Atualiza as cores do filamento dinamicamente (Aplicando DualColor e Tricolor em faixas alternadas)
   useEffect(() => {
     filamentLayersRef.current.forEach((item, index) => {
       const colors = selectedColor.colors;
-      // Alterna entre as cores do array para simular o efeito multicolorido do rolo
       const colorHex = colors[index % colors.length];
       
       item.material.color.set(new THREE.Color(colorHex));
-      item.material.roughness = selectedColor.category === 'Silk' ? 0.2 : 0.5;
-      item.material.metalness = selectedColor.category === 'Silk' ? 0.5 : 0.05;
+      
+      if (selectedColor.category === 'Silk') {
+        item.material.roughness = 0.2;
+        item.material.metalness = 0.5;
+      } else if (selectedColor.category === 'Matte') {
+        item.material.roughness = 0.85;
+        item.material.metalness = 0.0;
+      } else {
+        // Unicolor, DualColor, Tricolor padrão
+        item.material.roughness = 0.4;
+        item.material.metalness = 0.1;
+      }
     });
   }, [selectedColor]);
 
@@ -339,7 +352,7 @@ export default function App() {
               </span>
             </h1>
             <p className="text-slate-400 text-base sm:text-lg mb-8 max-w-xl">
-              Inspecione o carretel em 360° e experimente as transições exclusivas dos filamentos DualColor e Tricolor em tempo real.
+              Inspecione o carretel em 360° e experimente as opções Unicolor, Silk, Matte, DualColor e Tricolor em tempo real.
             </p>
 
             <div className="flex flex-wrap gap-4 mb-8">
@@ -393,13 +406,13 @@ export default function App() {
 
             <div className="mt-4 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
               <span>💡 Dica: Arraste para girar o rolo em 360°.</span>
-              <span className="font-mono text-slate-500">Visualização Multicamada Real</span>
+              <span className="font-mono text-slate-500">Visualização 3D Real</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* MODAL DE SELEÇÃO DE FILAMENTOS */}
+      {/* MODAL DE SELEÇÃO DE FILAMENTOS COM UNICOLORS, SILK E MATTE */}
       {isColorModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
@@ -421,7 +434,7 @@ export default function App() {
             </div>
 
             <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
-              {['Silk', 'Matte', 'DualColor', 'Tricolor'].map((catName) => {
+              {['Unicolor', 'Silk', 'Matte', 'DualColor', 'Tricolor'].map((catName) => {
                 const categoryColors = colorsList.filter((c) => c.category === catName);
                 if (categoryColors.length === 0) return null;
 
