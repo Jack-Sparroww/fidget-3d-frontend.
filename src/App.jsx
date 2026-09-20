@@ -21,26 +21,25 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isColorModalOpen, setIsColorModalOpen] = useState(false);
   
-  // Agora guardamos um array de cores (`colors`) para suportar Dual e Tricolor
   const [selectedColor, setSelectedColor] = useState({ 
     name: 'Dourado Silk', 
-    colors: ['#eab308'], 
+    colors: ['#eab308', '#ca8a04'], 
     category: 'Silk' 
   });
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   
   const mountRef = useRef(null);
-  const filamentMaterialsRef = useRef([]);
+  const filamentLayersRef = useRef([]);
   const spoolGroupRef = useRef(null);
 
   const colorsList = [
-    { name: 'Dourado Silk', colors: ['#eab308', '#ca8a04'], category: 'Silk' },
-    { name: 'Prata Silk', colors: ['#94a3b8', '#64748b'], category: 'Silk' },
-    { name: 'Vermelho Silk', colors: ['#dc2626', '#b91c1c'], category: 'Silk' },
-    { name: 'Azul Silk', colors: ['#2563eb', '#1d4ed8'], category: 'Silk' },
-    { name: 'Preto Matte', colors: ['#18181b', '#09090b'], category: 'Matte' },
+    { name: 'Dourado Silk', colors: ['#eab308', '#facc15'], category: 'Silk' },
+    { name: 'Prata Silk', colors: ['#94a3b8', '#cbd5e1'], category: 'Silk' },
+    { name: 'Vermelho Silk', colors: ['#dc2626', '#ef4444'], category: 'Silk' },
+    { name: 'Azul Silk', colors: ['#2563eb', '#3b82f6'], category: 'Silk' },
+    { name: 'Preto Matte', colors: ['#18181b', '#27272a'], category: 'Matte' },
     { name: 'Branco Matte', colors: ['#f4f4f5', '#e4e4e7'], category: 'Matte' },
-    { name: 'Cinza Matte', colors: ['#71717a', '#52525b'], category: 'Matte' },
+    { name: 'Cinza Matte', colors: ['#71717a', '#a1a1aa'], category: 'Matte' },
     { name: 'Azul/Verde DualColor', colors: ['#06b6d4', '#10b981'], category: 'DualColor' },
     { name: 'Rosa/Roxo DualColor', colors: ['#d946ef', '#8b5cf6'], category: 'DualColor' },
     { name: 'Cobre/Dourado DualColor', colors: ['#d97706', '#f59e0b'], category: 'DualColor' },
@@ -114,46 +113,42 @@ export default function App() {
       spoolGroupRef.current = group;
       group.scale.set(0.85, 0.85, 0.85);
 
-      filamentMaterialsRef.current = [];
+      filamentLayersRef.current = [];
 
-      // Criamos camadas independentes no carretel para distribuir as cores do filamento
-      const layersCount = 5;
-      for (let i = 0; i < layersCount; i++) {
-        const radius = 0.75 + (i * 0.12);
-        const heightVal = 0.76;
-        
-        const filamentGeo = new THREE.CylinderGeometry(radius, radius, heightVal, 48, 12, true);
-        
-        // Pega a cor correspondente a esta camada com base no array de cores do filamento selecionado
-        const colorIndex = i % selectedColor.colors.length;
-        const layerColor = selectedColor.colors[colorIndex];
+      // Criamos várias faixas/camadas para compor o efeito Multicolor/Dual/Tricolor de forma viva
+      const totalSlices = 12;
+      const sliceHeight = 0.76 / totalSlices;
 
-        const filamentMat = new THREE.MeshStandardMaterial({
-          color: new THREE.Color(layerColor),
-          roughness: selectedColor.category === 'Silk' ? 0.2 : 0.6,
-          metalness: selectedColor.category === 'Silk' ? 0.4 : 0.05,
+      for (let i = 0; i < totalSlices; i++) {
+        const radius = 0.82;
+        const geo = new THREE.CylinderGeometry(radius, radius, sliceHeight * 0.95, 32, 1, true);
+        
+        const mat = new THREE.MeshStandardMaterial({
+          roughness: 0.3,
+          metalness: 0.2,
           side: THREE.DoubleSide
         });
+
+        const mesh = new THREE.Mesh(geo, mat);
+        // Distribui as fatias ao longo do eixo Y do carretel
+        mesh.position.y = -0.38 + (i * sliceHeight) + (sliceHeight / 2);
         
-        filamentMaterialsRef.current.push({ mat: filamentMat, colors: selectedColor.colors });
-        const filamentLayer = new THREE.Mesh(filamentGeo, filamentMat);
-        group.add(filamentLayer);
+        group.add(mesh);
+        filamentLayersRef.current.push({ mesh, material: mat });
       }
 
+      // Núcleo e abas do carretel
       const coreGeo = new THREE.CylinderGeometry(0.72, 0.72, 0.78, 32);
       const coreMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.9 });
-      const coreMesh = new THREE.Mesh(coreGeo, coreMat);
-      group.add(coreMesh);
+      group.add(new THREE.Mesh(coreGeo, coreMat));
 
       const spoolMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.25, metalness: 0.45 });
       
-      const flangeGeo1 = new THREE.CylinderGeometry(1.35, 1.35, 0.08, 48);
-      const flange1 = new THREE.Mesh(flangeGeo1, spoolMat);
+      const flange1 = new THREE.Mesh(new THREE.CylinderGeometry(1.35, 1.35, 0.08, 48), spoolMat);
       flange1.position.y = 0.42;
       group.add(flange1);
 
-      const flangeGeo2 = new THREE.CylinderGeometry(1.35, 1.35, 0.08, 48);
-      const flange2 = new THREE.Mesh(flangeGeo2, spoolMat);
+      const flange2 = new THREE.Mesh(new THREE.CylinderGeometry(1.35, 1.35, 0.08, 48), spoolMat);
       flange2.position.y = -0.42;
       group.add(flange2);
 
@@ -170,18 +165,14 @@ export default function App() {
         group.add(rib2);
       }
 
-      const holeGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.95, 24);
-      const holeMat = new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.9 });
-      const hole = new THREE.Mesh(holeGeo, holeMat);
+      const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.95, 24), new THREE.MeshStandardMaterial({ color: 0x090d16 }));
       group.add(hole);
 
       group.rotation.x = Math.PI / 5;
       group.rotation.y = Math.PI / 4;
       scene.add(group);
 
-      const ambientLight = new THREE.AmbientLight(0xffffff, 1.3);
-      scene.add(ambientLight);
-
+      scene.add(new THREE.AmbientLight(0xffffff, 1.3));
       const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
       dirLight.position.set(6, 6, 6);
       scene.add(dirLight);
@@ -190,13 +181,12 @@ export default function App() {
 
       let isDragging = false;
       let previousMousePosition = { x: 0, y: 0 };
-      let autoRotate = true;
 
+      // Animação contínua e fluida em 360°
       const animate = () => {
         animationFrameId = requestAnimationFrame(animate);
-        if (autoRotate && !isDragging) {
-          group.rotation.y += 0.008;
-          group.rotation.x += 0.003;
+        if (!isDragging && spoolGroupRef.current) {
+          spoolGroupRef.current.rotation.y += 0.008; // Rotação automática suave
         }
         renderer.render(scene, camera);
       };
@@ -204,17 +194,16 @@ export default function App() {
 
       const onMouseDown = (e) => {
         isDragging = true;
-        autoRotate = false;
         previousMousePosition = { x: e.clientX, y: e.clientY };
       };
 
       const onMouseMove = (e) => {
-        if (!isDragging) return;
+        if (!isDragging || !spoolGroupRef.current) return;
         const deltaX = e.clientX - previousMousePosition.x;
         const deltaY = e.clientY - previousMousePosition.y;
 
-        group.rotation.y += deltaX * 0.012;
-        group.rotation.x += deltaY * 0.012;
+        spoolGroupRef.current.rotation.y += deltaX * 0.012;
+        spoolGroupRef.current.rotation.x += deltaY * 0.012;
 
         previousMousePosition = { x: e.clientX, y: e.clientY };
       };
@@ -223,8 +212,7 @@ export default function App() {
         isDragging = false;
       };
 
-      const domElem = currentRef;
-      domElem.addEventListener('mousedown', onMouseDown);
+      currentRef.addEventListener('mousedown', onMouseDown);
       window.addEventListener('mousemove', onMouseMove);
       window.addEventListener('mouseup', onMouseUp);
 
@@ -239,26 +227,28 @@ export default function App() {
       window.addEventListener('resize', handleResize);
 
       return () => {
-        domElem.removeEventListener('mousedown', onMouseDown);
+        currentRef.removeEventListener('mousedown', onMouseDown);
         window.removeEventListener('mousemove', onMouseMove);
         window.removeEventListener('mouseup', onMouseUp);
         window.removeEventListener('resize', handleResize);
         cancelAnimationFrame(animationFrameId);
         if (renderer) renderer.dispose();
-        if (currentRef) currentRef.replaceChildren();
       };
     } catch (err) {
       console.error(err);
     }
   }, []);
 
-  // Atualiza as cores das camadas do carretel dinamicamente quando o usuário troca o filamento
+  // Atualiza as cores do filamento dinamicamente (Aplicando DualColor e Tricolor em faixas alternadas)
   useEffect(() => {
-    filamentMaterialsRef.current.forEach((item, index) => {
-      const colorIndex = index % selectedColor.colors.length;
-      item.mat.color.set(new THREE.Color(selectedColor.colors[colorIndex]));
-      item.mat.roughness = selectedColor.category === 'Silk' ? 0.2 : 0.6;
-      item.mat.metalness = selectedColor.category === 'Silk' ? 0.4 : 0.05;
+    filamentLayersRef.current.forEach((item, index) => {
+      const colors = selectedColor.colors;
+      // Alterna entre as cores do array para simular o efeito multicolorido do rolo
+      const colorHex = colors[index % colors.length];
+      
+      item.material.color.set(new THREE.Color(colorHex));
+      item.material.roughness = selectedColor.category === 'Silk' ? 0.2 : 0.5;
+      item.material.metalness = selectedColor.category === 'Silk' ? 0.5 : 0.05;
     });
   }, [selectedColor]);
 
@@ -340,7 +330,7 @@ export default function App() {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-lime-500/10 border border-lime-500/30 text-lime-400 text-xs font-mono mb-6">
               <span className="w-2 h-2 rounded-full bg-lime-500 animate-ping" />
-              Simulador 3D com Rotação 360° Livre
+              Simulador 3D com Rotação 360° Contínua
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-none mb-6">
               Fidget Toys 3D com <br />
@@ -403,13 +393,13 @@ export default function App() {
 
             <div className="mt-4 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
               <span>💡 Dica: Arraste para girar o rolo em 360°.</span>
-              <span className="font-mono text-slate-500">Visualização Multicamada</span>
+              <span className="font-mono text-slate-500">Visualização Multicamada Real</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* MODAL DE SELEÇÃO DE FILAMENTOS COM SUPORTE A DUAL/TRICOLOR */}
+      {/* MODAL DE SELEÇÃO DE FILAMENTOS */}
       {isColorModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
