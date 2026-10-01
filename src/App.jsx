@@ -191,6 +191,7 @@ export default function App() {
       const animate = () => {
         animationFrameId = requestAnimationFrame(animate);
         if (!isDragging && spoolGroupRef.current) {
+          // Rotação suave automática contínua nos eixos Y e X de forma sutil
           spoolGroupRef.current.rotation.y += 0.008;
         }
         renderer.render(scene, camera);
@@ -207,8 +208,9 @@ export default function App() {
         const deltaX = e.clientX - previousMousePosition.x;
         const deltaY = e.clientY - previousMousePosition.y;
 
-        spoolGroupRef.current.rotation.y += deltaX * 0.012;
-        spoolGroupRef.current.rotation.x += deltaY * 0.012;
+        // Rotação livre em 360° em todos os ângulos (Eixos X e Y independentes e sem travas)
+        spoolGroupRef.current.rotation.y += deltaX * 0.015;
+        spoolGroupRef.current.rotation.x += deltaY * 0.015;
 
         previousMousePosition = { x: e.clientX, y: e.clientY };
       };
@@ -217,9 +219,36 @@ export default function App() {
         isDragging = false;
       };
 
+      // Suporte a toque (Mobile)
+      const onTouchStart = (e) => {
+        if (e.touches.length === 1) {
+          isDragging = true;
+          previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+      };
+
+      const onTouchMove = (e) => {
+        if (!isDragging || !spoolGroupRef.current || e.touches.length !== 1) return;
+        const deltaX = e.touches[0].clientX - previousMousePosition.x;
+        const deltaY = e.touches[0].clientY - previousMousePosition.y;
+
+        spoolGroupRef.current.rotation.y += deltaX * 0.015;
+        spoolGroupRef.current.rotation.x += deltaY * 0.015;
+
+        previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      };
+
+      const onTouchEnd = () => {
+        isDragging = false;
+      };
+
       currentRef.addEventListener('mousedown', onMouseDown);
       window.addEventListener('mousemove', onMouseMove);
       window.addEventListener('mouseup', onMouseUp);
+
+      currentRef.addEventListener('touchstart', onTouchStart, { passive: true });
+      window.addEventListener('touchmove', onTouchMove, { passive: true });
+      window.addEventListener('touchend', onTouchEnd);
 
       const handleResize = () => {
         if (!currentRef) return;
@@ -235,6 +264,9 @@ export default function App() {
         currentRef.removeEventListener('mousedown', onMouseDown);
         window.removeEventListener('mousemove', onMouseMove);
         window.removeEventListener('mouseup', onMouseUp);
+        currentRef.removeEventListener('touchstart', onTouchStart);
+        window.removeEventListener('touchmove', onTouchMove);
+        window.removeEventListener('touchend', onTouchEnd);
         window.removeEventListener('resize', handleResize);
         cancelAnimationFrame(animationFrameId);
         if (renderer) renderer.dispose();
@@ -258,7 +290,6 @@ export default function App() {
         item.material.roughness = 0.85;
         item.material.metalness = 0.0;
       } else {
-        // Unicolor, DualColor, Tricolor padrão
         item.material.roughness = 0.4;
         item.material.metalness = 0.1;
       }
@@ -343,7 +374,7 @@ export default function App() {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-lime-500/10 border border-lime-500/30 text-lime-400 text-xs font-mono mb-6">
               <span className="w-2 h-2 rounded-full bg-lime-500 animate-ping" />
-              Simulador 3D com Rotação 360° Contínua
+              Simulador 3D com Rotação Livre 360° Completa
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-none mb-6">
               Fidget Toys 3D com <br />
@@ -352,7 +383,7 @@ export default function App() {
               </span>
             </h1>
             <p className="text-slate-400 text-base sm:text-lg mb-8 max-w-xl">
-              Inspecione o carretel em 360° e experimente as opções Unicolor, Silk, Matte, DualColor e Tricolor em tempo real.
+              Inspecione o carretel livremente em qualquer ângulo 360° e experimente as opções Unicolor, Silk, Matte, DualColor e Tricolor em tempo real.
             </p>
 
             <div className="flex flex-wrap gap-4 mb-8">
@@ -405,7 +436,7 @@ export default function App() {
             <div ref={mountRef} className="w-full h-72 sm:h-80 rounded-2xl cursor-grab active:cursor-grabbing mt-6" />
 
             <div className="mt-4 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-              <span>💡 Dica: Arraste para girar o rolo em 360°.</span>
+              <span>💡 Dica: Arraste com o mouse em qualquer direção para girar 360° livres.</span>
               <span className="font-mono text-slate-500">Visualização 3D Real</span>
             </div>
           </div>
