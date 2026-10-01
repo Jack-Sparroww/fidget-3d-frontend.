@@ -7,7 +7,6 @@ const SolidAxisLogo = () => (
     <path d="M100 15 A85 85 0 0 1 185 100" stroke="#84cc16" strokeWidth="8" strokeLinecap="round" />
     <path d="M15 100 A85 85 0 0 1 100 185" stroke="#94a3b8" strokeWidth="6" strokeLinecap="round" />
     <circle cx="100" cy="100" r="65" stroke="#1e293b" strokeWidth="6" />
-    <path d="M100 35 A65 65 0 0 1 165 100" stroke="#a3e635" strokeWidth="6" />
     <g transform="translate(100,100)">
       <path d="M0 -25 L22 -12 L0 0 L-22 -12 Z" fill="#e2e8f0" />
       <path d="M-22 -12 L0 0 L0 25 L-22 13 Z" fill="#64748b" />
@@ -174,8 +173,8 @@ export default function App() {
       const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.95, 24), new THREE.MeshStandardMaterial({ color: 0x090d16 }));
       group.add(hole);
 
-      group.rotation.x = Math.PI / 5;
-      group.rotation.y = Math.PI / 4;
+      // Posição inicial limpa
+      group.rotation.set(0.4, 0.5, 0);
       scene.add(group);
 
       scene.add(new THREE.AmbientLight(0xffffff, 1.3));
@@ -190,9 +189,9 @@ export default function App() {
 
       const animate = () => {
         animationFrameId = requestAnimationFrame(animate);
+        // Se o usuário não estiver arrastando, dá uma leve rotação automática no eixo Y global do objeto
         if (!isDragging && spoolGroupRef.current) {
-          // Rotação suave automática contínua nos eixos Y e X de forma sutil
-          spoolGroupRef.current.rotation.y += 0.008;
+          spoolGroupRef.current.rotateY(0.008);
         }
         renderer.render(scene, camera);
       };
@@ -208,9 +207,20 @@ export default function App() {
         const deltaX = e.clientX - previousMousePosition.x;
         const deltaY = e.clientY - previousMousePosition.y;
 
-        // Rotação livre em 360° em todos os ângulos (Eixos X e Y independentes e sem travas)
-        spoolGroupRef.current.rotation.y += deltaX * 0.015;
-        spoolGroupRef.current.rotation.x += deltaY * 0.015;
+        // Rotação orbital verdadeira em 360° sem travas (usando quaternions / rotação incremental por eixos da tela)
+        const rotationSpeed = 0.008;
+        
+        // Rotação em torno do eixo Y global (horizontal do mouse)
+        const quaternionX = new THREE.Quaternion();
+        quaternionX.setFromAxisAngle(new THREE.Vector3(0, 1, 0), deltaX * rotationSpeed);
+        
+        // Rotação em torno do eixo X local (vertical do mouse)
+        const quaternionY = new THREE.Quaternion();
+        quaternionY.setFromAxisAngle(new THREE.Vector3(1, 0, 0), deltaY * rotationSpeed);
+
+        // Aplica as rotações acumuladas no grupo de forma independente e livre
+        spoolGroupRef.current.applyQuaternion(quaternionX);
+        spoolGroupRef.current.quaternion.premultiply(quaternionY);
 
         previousMousePosition = { x: e.clientX, y: e.clientY };
       };
@@ -219,7 +229,7 @@ export default function App() {
         isDragging = false;
       };
 
-      // Suporte a toque (Mobile)
+      // Suporte a toque (Mobile) em 360° reais
       const onTouchStart = (e) => {
         if (e.touches.length === 1) {
           isDragging = true;
@@ -232,8 +242,15 @@ export default function App() {
         const deltaX = e.touches[0].clientX - previousMousePosition.x;
         const deltaY = e.touches[0].clientY - previousMousePosition.y;
 
-        spoolGroupRef.current.rotation.y += deltaX * 0.015;
-        spoolGroupRef.current.rotation.x += deltaY * 0.015;
+        const rotationSpeed = 0.008;
+        const quaternionX = new THREE.Quaternion();
+        quaternionX.setFromAxisAngle(new THREE.Vector3(0, 1, 0), deltaX * rotationSpeed);
+        
+        const quaternionY = new THREE.Quaternion();
+        quaternionY.setFromAxisAngle(new THREE.Vector3(1, 0, 0), deltaY * rotationSpeed);
+
+        spoolGroupRef.current.applyQuaternion(quaternionX);
+        spoolGroupRef.current.quaternion.premultiply(quaternionY);
 
         previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
       };
@@ -374,7 +391,7 @@ export default function App() {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-lime-500/10 border border-lime-500/30 text-lime-400 text-xs font-mono mb-6">
               <span className="w-2 h-2 rounded-full bg-lime-500 animate-ping" />
-              Simulador 3D com Rotação Livre 360° Completa
+              Simulador 3D com Rotação Orbital Livre 360°
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-none mb-6">
               Fidget Toys 3D com <br />
@@ -383,7 +400,7 @@ export default function App() {
               </span>
             </h1>
             <p className="text-slate-400 text-base sm:text-lg mb-8 max-w-xl">
-              Inspecione o carretel livremente em qualquer ângulo 360° e experimente as opções Unicolor, Silk, Matte, DualColor e Tricolor em tempo real.
+              Inspecione o carretel livremente em qualquer ângulo 360° em todas as direções e experimente as opções Unicolor, Silk, Matte, DualColor e Tricolor em tempo real.
             </p>
 
             <div className="flex flex-wrap gap-4 mb-8">
@@ -436,8 +453,8 @@ export default function App() {
             <div ref={mountRef} className="w-full h-72 sm:h-80 rounded-2xl cursor-grab active:cursor-grabbing mt-6" />
 
             <div className="mt-4 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-              <span>💡 Dica: Arraste com o mouse em qualquer direção para girar 360° livres.</span>
-              <span className="font-mono text-slate-500">Visualização 3D Real</span>
+              <span>💡 Dica: Arraste em qualquer direção para girar livremente em 360°.</span>
+              <span className="font-mono text-slate-500">Three.js Orbit Quaternion</span>
             </div>
           </div>
         </div>
@@ -645,7 +662,7 @@ export default function App() {
                         key={`${item.id}-${item.color}-${idx}`}
                         className="flex items-center justify-between p-3 bg-slate-900/80 border border-slate-800 rounded-xl"
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
                           <img
                             src={item.image}
                             alt={item.name}
