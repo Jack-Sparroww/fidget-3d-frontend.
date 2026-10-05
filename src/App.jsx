@@ -16,7 +16,7 @@ const SolidAxisLogo = () => (
 );
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('catalogo'); // 'catalogo' ou 'orcamento'
+  const [activeTab, setActiveTab] = useState('catalogo');
   const [cart, setCart] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isColorModalOpen, setIsColorModalOpen] = useState(false);
@@ -29,9 +29,8 @@ export default function App() {
   });
   const [selectedCategory, setSelectedCategory] = useState('Todos');
 
-  // Estados para o Orçamento Instantâneo
   const [quoteFile, setQuoteFile] = useState(null);
-  const [dimensions, setDimensions] = useState({ length: 5, width: 5, height: 5 }); // em cm
+  const [dimensions, setDimensions] = useState({ length: 5, width: 5, height: 5 });
   const [infill, setInfill] = useState({ name: 'Padrão / Uso Geral (20%) [Recomendado]', multiplier: 1.0 });
   const [layerHeight, setLayerHeight] = useState({ name: '0.20mm (Padrão / Recomendado)', timeMultiplier: 1.0, qualityDesc: 'Espessura de um fio de cabelo grosso ou cartão de crédito dividido.' });
 
@@ -102,7 +101,6 @@ export default function App() {
     }
   ];
 
-  // Configuração do simulador 3D do carretel
   useEffect(() => {
     const currentRef = mountRef.current;
     if (!currentRef) return;
@@ -278,7 +276,6 @@ export default function App() {
     }
   }, []);
 
-  // Atualiza cores do carretel 3D
   useEffect(() => {
     filamentLayersRef.current.forEach((item, index) => {
       const colors = selectedColor.colors;
@@ -299,7 +296,6 @@ export default function App() {
     });
   }, [selectedColor]);
 
-  // Cálculos automáticos para o Orçamento Instantâneo
   const volumeCm3 = dimensions.length * dimensions.width * dimensions.height;
   const estimatedWeightGrams = Math.round(volumeCm3 * 0.25 * infill.multiplier);
   const estimatedHours = Math.max(0.5, (estimatedWeightGrams / 12) * layerHeight.timeMultiplier).toFixed(1);
@@ -335,7 +331,7 @@ export default function App() {
     const fileName = quoteFile ? quoteFile.name : 'Peça personalizada';
     const message = `Olá, SolidAxis! Gostaria de aprovar o seguinte orçamento gerado no site:\n\n` +
       `- Arquivo/Peça: ${fileName}\n` +
-      `- Dimensões: ${dimensions.length}x{dimensions.width}x{dimensions.height} cm\n` +
+      `- Dimensões: ${dimensions.length}x${dimensions.width}x${dimensions.height} cm\n` +
       `- Material: ${selectedColor.name}\n` +
       `- Altura de Camada: ${layerHeight.name}\n` +
       `- Preenchimento: ${infill.name}\n` +
@@ -351,17 +347,19 @@ export default function App() {
       {/* HEADER */}
       <header className="sticky top-0 z-40 bg-[#0a0c10]/90 backdrop-blur-md border-b border-slate-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <SolidAxisLogo />
-            <div>
-              <span className="text-2xl font-black tracking-wider text-white">
-                SOLID<span className="text-lime-500">AXIS</span>
-              </span>
-              <span className="block text-[10px] tracking-widest text-slate-400 font-mono -mt-1 uppercase">
-                Manufacture 3D Lab
-              </span>
+          <a href="/" style={{ cursor: 'pointer', textDecoration: 'none' }}>
+            <div className="flex items-center gap-3">
+              <SolidAxisLogo />
+              <div>
+                <span className="text-2xl font-black tracking-wider text-white">
+                  SOLID<span className="text-lime-500">AXIS</span>
+                </span>
+                <span className="block text-[10px] tracking-widest text-slate-400 font-mono -mt-1 uppercase">
+                  Manufacture 3D Lab
+                </span>
+              </div>
             </div>
-          </div>
+          </a>
 
           {/* ABAS DE NAVEGAÇÃO PRINCIPAL */}
           <nav className="hidden md:flex items-center gap-2 bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800">
@@ -422,7 +420,6 @@ export default function App() {
         </button>
       </div>
 
-      {/* CONTEÚDO CONDICIONAL: CATÁLOGO OU ORÇAMENTO */}
       {activeTab === 'catalogo' ? (
         <>
           <section className="relative overflow-hidden py-12 md:py-20 border-b border-slate-800/60 bg-gradient-to-b from-[#0a0c10] via-slate-950 to-[#0a0c10]">
@@ -537,7 +534,6 @@ export default function App() {
           </main>
         </>
       ) : (
-        /* ABA DE ORÇAMENTO INSTANTÂNEO */
         <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="mb-10 text-center max-w-2xl mx-auto">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono mb-4">
@@ -553,9 +549,7 @@ export default function App() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* COLUNA DA ESQUERDA: PARÂMETROS */}
             <div className="lg:col-span-2 space-y-6">
-              {/* 1. UPLOAD DE ARQUIVO */}
               <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6">
                 <h3 className="text-sm font-mono uppercase tracking-wider text-lime-400 mb-4">1. Enviar Arquivo 3D (CAD / STL)</h3>
                 <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-700 hover:border-lime-500/60 rounded-2xl p-8 cursor-pointer bg-slate-950/50 transition-all group">
@@ -579,7 +573,6 @@ export default function App() {
                 </label>
               </div>
 
-              {/* 2. DIMENSÕES APROXIMADAS */}
               <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6">
                 <h3 className="text-sm font-mono uppercase tracking-wider text-lime-400 mb-2">2. Dimensões Estimadas da Peça (em cm)</h3>
                 <p className="text-xs text-slate-400 mb-4">Insira o tamanho aproximado da peça para o cálculo automático de volume e peso.</p>
@@ -614,7 +607,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* 3. MATERIAL / FILAMENTO */}
               <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-mono uppercase tracking-wider text-lime-400">3. Material e Cor do Filamento</h3>
@@ -638,18 +630,16 @@ export default function App() {
                 </div>
               </div>
 
-              {/* 4. QUALIDADE E PREENCHIMENTO */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {/* Altura de Camada com comparação do dia a dia */}
                 <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 flex flex-col justify-between">
                   <div>
                     <h3 className="text-sm font-mono uppercase tracking-wider text-lime-400 mb-2">4. Altura de Camada (Qualidade)</h3>
                     <p className="text-xs text-slate-400 mb-4">Define a precisão dos detalhes visuais.</p>
                     <div className="space-y-2.5">
                       {[
-                        { name: '0.28mm (Rascunho / Econômico)', timeMultiplier: 0.7, qualityDesc: 'Espessura de 3 folhas de papel sulfite juntas. Ideal para protótipos rápidos.' },
-                        { name: '0.20mm (Padrão / Recomendado)', timeMultiplier: 1.0, qualityDesc: 'Espessura de um fio de cabelo grosso ou cartão de crédito dividido.' },
-                        { name: '0.12mm (Alta Definição / Miniaturas)', timeMultiplier: 1.8, qualityDesc: 'Fino como uma teia de aranha estruturada. Máximo de detalhes.' }
+                        { name: '0.28mm (Rascunho / Econômico)', timeMultiplier: 0.7, qualityDesc: 'Espessura de 3 folhas de papel sulfite juntas.' },
+                        { name: '0.20mm (Padrão / Recomendado)', timeMultiplier: 1.0, qualityDesc: 'Espessura de um fio de cabelo grosso ou cartão de crédito.' },
+                        { name: '0.12mm (Alta Definição / Miniaturas)', timeMultiplier: 1.8, qualityDesc: 'Fino como uma teia de aranha estruturada. Máximo detalhes.' }
                       ].map((item) => (
                         <button
                           key={item.name}
@@ -666,7 +656,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Preenchimento (Infill) */}
                 <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 flex flex-col justify-between">
                   <div>
                     <h3 className="text-sm font-mono uppercase tracking-wider text-lime-400 mb-2">5. Preenchimento Interno (Infill)</h3>
@@ -693,7 +682,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* COLUNA DA DIREITA: RESUMO E FECHAMENTO DO ORÇAMENTO */}
             <div className="space-y-6">
               <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sticky top-28 shadow-2xl">
                 <h3 className="text-base font-black text-white mb-6 pb-4 border-b border-slate-800">
@@ -766,7 +754,6 @@ export default function App() {
         </main>
       )}
 
-      {/* MODAL DE SELEÇÃO DE FILAMENTOS */}
       {isColorModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div onClick={() => setIsColorModalOpen(false)} className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" />
@@ -822,7 +809,6 @@ export default function App() {
         </div>
       )}
 
-      {/* CARRINHO LATERAL */}
       {isCartOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden">
           <div onClick={() => setIsCartOpen(false)} className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" />
@@ -863,7 +849,7 @@ export default function App() {
                     <span className="text-slate-400">Total do Pedido</span>
                     <span className="text-2xl font-black text-white">R$ {totalCartPrice.toFixed(2).replace('.', ',')}</span>
                   </div>
-                  <button onClick={() => alert('Pedido encaminhado para pagamento!')} className="w-full py-4 bg-lime-500 hover:bg-lime-400 text-slate-950 font-bold rounded-xl transition-all text-sm uppercase tracking-wider shadow-lg">
+                  <button onClick={() => alert('Pedido encaminhado para pagamento via Pix!')} className="w-full py-4 bg-lime-500 hover:bg-lime-400 text-slate-950 font-bold rounded-xl transition-all text-sm uppercase tracking-wider shadow-lg">
                     Finalizar Pedido com Pix
                   </button>
                 </div>
